@@ -69,10 +69,12 @@ function Summary({ year, setYear }: { year: number; setYear: (y: number) => void
       <Seg<string> value={P} onChange={setP} options={[{ k: 'all', label: 'All' }, { k: 'flex', label: 'Flex' }, { k: 'doordash', label: 'DoorDash' }, { k: 'ubereats', label: 'Uber Eats' }]} />
       <Card>
         <Text style={{ color: C.text, fontSize: 38, fontWeight: '800' }}>{money(t.gross)}</Text>
-        <Mut>Gross{P === 'all' ? ' from all platforms' : ' from ' + PLAT_NAME[P as 'flex']} · {t.n} blocks · {num(t.hours)} hrs · {money(t.perHr)}/hr</Mut>
+        <Mut>Gross{P === 'all' ? ' from all platforms' : ' from ' + PLAT_NAME[P as 'flex']} · {t.n} block{t.n === 1 ? '' : 's'} · {num(t.hours)} hrs · {money(t.perHr)}/hr with tips</Mut>
         <View style={{ marginTop: 12 }}>
           <TableRow cells={['Pay', money(t.pay)]} />
           <TableRow cells={['Tips', money(t.tips)]} />
+          <TableRow cells={['Per hour, base pay only', money(t.hours > 0 ? t.pay / t.hours : 0)]} />
+          <TableRow cells={['Per hour, with tips', money(t.perHr)]} />
           {t.orders > 0 && <TableRow cells={['Orders logged', num(t.orders, 0)]} />}
           {t.orders > 0 && <TableRow cells={['Pay per order', money(t.perOrder)]} />}
           <TableRow cells={['Miles driven (logged)', num(t.miles, 0)]} />

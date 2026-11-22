@@ -230,7 +230,7 @@ export const profitOf = (gross: number, deduct: number, other: number) => c2(gro
 
 export function rateText(e: Block): string {
   const g = (+e.pay || 0) + (+e.tips || 0);
-  let t = (+e.hours > 0 ? money(g / e.hours) : '$0.00') + '/hr';
+  let t = (+e.hours > 0 ? money(g / e.hours) : '$0.00') + '/hr' + (+e.tips > 0 ? ' with tips' : '');
   if (+e.orders > 0) t += ` · ${num(e.orders, 0)} orders · ${money(g / e.orders)}/order`;
   return t;
 }

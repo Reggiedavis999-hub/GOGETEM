@@ -1,21 +1,85 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
-  KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle,
+  Dimensions, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleProp, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C } from '../lib/theme';
+
+/* ---------- keyboard ---------- */
+type Measurable = { measureInWindow?: (cb: (x: number, y: number, w: number, h: number) => void) => void };
+const RevealCtx = createContext<() => void>(() => {});
+/** Call from a field's onFocus so the field scrolls above the keyboard. */
+export const useReveal = () => useContext(RevealCtx);
+
+/**
+ * ScrollView that keeps the field you are typing in visible above the keyboard.
+ * Android draws edge to edge and does not resize for the keyboard, so we pad the bottom by the keyboard height
+ * and scroll the focused field into view. iPhone keeps its native insets handling.
+ */
+export function KeyboardScroll({
+  children, contentContainerStyle, showsVerticalScrollIndicator,
+}: { children: React.ReactNode; contentContainerStyle?: StyleProp<ViewStyle>; showsVerticalScrollIndicator?: boolean }) {
+  const ref = useRef<ScrollView>(null);
+  const offset = useRef(0);
+  const kbH = useRef(0);
+  const kbTop = useRef(0);
+  const [pad, setPad] = useState(0);
+  const android = Platform.OS === 'android';
+
+  const reveal = useCallback(() => {
+    if (!android) return;
+    const run = () => {
+      if (!kbH.current) return;
+      const input = (TextInput as unknown as { State?: { currentlyFocusedInput?: () => unknown } }).State?.currentlyFocusedInput?.() as Measurable | null | undefined;
+      if (!input || !input.measureInWindow) return;
+      input.measureInWindow((_x, y, _w, h) => {
+        const top = kbTop.current || Dimensions.get('window').height - kbH.current;
+        const over = y + h + 32 - top;
+        if (over > 0) ref.current?.scrollTo({ y: offset.current + over, animated: true });
+      });
+    };
+    setTimeout(run, 120);
+    setTimeout(run, 320);
+  }, [android]);
+
+  useEffect(() => {
+    if (!android) return;
+    const a = Keyboard.addListener('keyboardDidShow', (e) => {
+      kbH.current = e.endCoordinates.height;
+      kbTop.current = e.endCoordinates.screenY || 0;
+      setPad(kbH.current);
+      reveal();
+    });
+    const b = Keyboard.addListener('keyboardDidHide', () => { kbH.current = 0; kbTop.current = 0; setPad(0); });
+    return () => { a.remove(); b.remove(); };
+  }, [android, reveal]);
+
+  const flat = StyleSheet.flatten(contentContainerStyle) || {};
+  const base = typeof flat.paddingBottom === 'number' ? flat.paddingBottom : 0;
+  return (
+    <RevealCtx.Provider value={reveal}>
+      <ScrollView
+        ref={ref}
+        onScroll={(e) => { offset.current = e.nativeEvent.contentOffset.y; }}
+        scrollEventThrottle={16}
+        contentContainerStyle={[flat, { paddingBottom: base + pad }]}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        showsVerticalScrollIndicator={showsVerticalScrollIndicator}
+      >
+        {children}
+      </ScrollView>
+    </RevealCtx.Provider>
+  );
+}
 
 /* ---------- layout ---------- */
 export function Screen({ children, pad = 14, bottom = 24 }: { children: React.ReactNode; pad?: number; bottom?: number }) {
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        contentContainerStyle={{ padding: pad, paddingBottom: bottom, maxWidth: 720, width: '100%', alignSelf: 'center' }}
-        keyboardShouldPersistTaps="handled"
-        automaticallyAdjustKeyboardInsets
-      >
+      <KeyboardScroll contentContainerStyle={{ padding: pad, paddingBottom: bottom, maxWidth: 720, width: '100%', alignSelf: 'center' }}>
         {children}
-      </ScrollView>
+      </KeyboardScroll>
     </KeyboardAvoidingView>
   );
 }
@@ -144,6 +208,7 @@ export function Bar({ pct }: { pct: number }) {
 export function Field({
   label, value, onChangeText, hint, ...rest
 }: { label: string; value: string; onChangeText: (t: string) => void; hint?: string } & Omit<TextInputProps, 'value' | 'onChangeText'>) {
+  const reveal = useReveal();
   return (
     <View style={{ marginTop: 12, flex: 1 }}>
       <Text style={s.label}>{label}</Text>
@@ -154,6 +219,7 @@ export function Field({
         style={[s.input, rest.multiline && { minHeight: 76, textAlignVertical: 'top' }]}
         accessibilityLabel={label}
         {...rest}
+        onFocus={(e) => { rest.onFocus?.(e); reveal(); }}
       />
       {!!hint && <Text style={s.hint}>{hint}</Text>}
     </View>

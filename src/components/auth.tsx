@@ -2,12 +2,12 @@ import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
 import {
-  ImageBackground, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View,
+  ImageBackground, KeyboardAvoidingView, Linking, Platform, Pressable, Share, StyleSheet, Text, TextInput, useWindowDimensions, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from '../lib/store';
 import { C } from '../lib/theme';
-import { Btn, s } from './ui';
+import { Btn, KeyboardScroll, s, useReveal } from './ui';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const COVER = require('../../assets/cover.jpg');
@@ -27,6 +27,7 @@ function PwField({
   label: string; value: string; onChangeText: (t: string) => void; show: boolean; onToggle: () => void;
   autoComplete: 'current-password' | 'new-password'; textContentType: 'password' | 'newPassword'; hint?: string; onSubmit?: () => void;
 }) {
+  const reveal = useReveal();
   return (
     <View style={{ marginTop: 12 }}>
       <Text style={s.label}>{label}</Text>
@@ -42,6 +43,7 @@ function PwField({
           maxLength={200}
           accessibilityLabel={label}
           onSubmitEditing={onSubmit}
+          onFocus={reveal}
           returnKeyType={onSubmit ? 'go' : 'next'}
           placeholderTextColor="#6d6a63"
           style={[s.input, { flex: 1, paddingRight: 64 }]}
@@ -64,6 +66,7 @@ function PwField({
 function TextField({
   label, value, onChangeText, hint, ...rest
 }: { label: string; value: string; onChangeText: (t: string) => void; hint?: string } & Omit<React.ComponentProps<typeof TextInput>, 'value' | 'onChangeText'>) {
+  const reveal = useReveal();
   return (
     <View style={{ marginTop: 12 }}>
       <Text style={s.label}>{label}</Text>
@@ -74,6 +77,7 @@ function TextField({
         style={s.input}
         accessibilityLabel={label}
         {...rest}
+        onFocus={(e) => { rest.onFocus?.(e); reveal(); }}
       />
       {!!hint && <Text style={s.hint}>{hint}</Text>}
     </View>
@@ -195,9 +199,8 @@ export function AuthScreen() {
         style={StyleSheet.absoluteFill}
       />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
+        <KeyboardScroll
           contentContainerStyle={{ minHeight: height - ins.top, justifyContent: 'flex-end', paddingHorizontal: 20, paddingTop: ins.top + 12, paddingBottom: ins.bottom + 20 }}
-          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           <View style={{ width: '100%', maxWidth: 420, alignSelf: 'center' }}>
@@ -321,7 +324,7 @@ export function AuthScreen() {
               </View>
             )}
           </View>
-        </ScrollView>
+        </KeyboardScroll>
       </KeyboardAvoidingView>
     </View>
   );

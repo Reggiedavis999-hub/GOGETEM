@@ -110,6 +110,8 @@ export default function BlockForm() {
 
   const perHrHint = isPerHr(pay) ? (hv > 0 ? `= ${money(parsePay(pay, hv))} total for ${num(hv, 2)}h` : 'Add the hours to see the total.') : '';
   const showDone = status === 'done';
+  const previewBase = hv > 0 ? parsePay(pay, hv) : 0;
+  const previewTips = cleanNum(tips);
 
   return (
     <SheetScreen title={existing ? 'Edit block' : status === 'planned' ? 'Upcoming block' : 'Completed block'}>
@@ -131,6 +133,11 @@ export default function BlockForm() {
             <Field label="Tips $" value={tips} onChangeText={setTips} keyboardType="decimal-pad" placeholder="0" />
           </Two>
           <Field label="Orders / deliveries" value={orders} onChangeText={setOrders} keyboardType="number-pad" placeholder="0" />
+          {hv > 0 && previewBase + previewTips > 0 && (
+            <Text style={{ color: C.mute, fontSize: 13, marginTop: 10 }}>
+              {money(previewBase + previewTips)} total for {num(hv, 2)}h: {money((previewBase + previewTips) / hv)}/hr with tips · {money(previewBase / hv)}/hr base pay only
+            </Text>
+          )}
         </>
       )}
       <Field label="Station / zone / area" value={station} onChangeText={setStation} autoCorrect={false} />

@@ -34,7 +34,7 @@ export function BlockRow({ e, now, nextId }: { e: Block; now: Date; nextId?: str
     else { line = 'Starts in ' + dur(s.getTime() - now.getTime()); if (e.id === nextId) border = C.goldLine; }
     amt = g > 0 ? money(g) : '—'; sub2 = 'expected';
   } else {
-    line = (e.hours > 0 && g > 0 ? money(g / e.hours) + '/hr' : '') + (e.miles > 0 ? ' · ' + num(e.miles, 0) + ' mi' : '');
+    line = (e.hours > 0 && g > 0 ? money(g / e.hours) + '/hr' + (e.tips > 0 ? ' with tips' : '') : '') + (e.miles > 0 ? ' · ' + num(e.miles, 0) + ' mi' : '');
     amt = money(g);
   }
 
@@ -161,7 +161,7 @@ function LiveBody({ armed, tap, flash, setLive }: { armed: string | null; tap: (
       <Text style={{ color: C.text, fontSize: 38, fontWeight: '800', marginVertical: 8, fontVariant: ['tabular-nums'] }}>{clk(r.ms)}</Text>
       <StatRow>
         <Stat value={money(r.gross)} label="earned" />
-        <Stat value={r.perHr > 0 ? money(r.perHr) : '--'} label="per hour" />
+        <Stat value={r.perHr > 0 ? money(r.perHr) : '--'} label="per hour w/ tips" />
         <Stat value={String(r.n)} label="deliveries" />
       </StatRow>
       <Mut style={{ marginVertical: 8 }}>Pay {money(r.pay)} · Tips {money(r.tips)} · {num(r.miles, 1)} mi{r.n ? ` · ${money(r.gross / r.n)}/delivery` : ''}</Mut>

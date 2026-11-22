@@ -55,7 +55,7 @@ export default function Home() {
         <View style={{ marginTop: 12 }}>
           <StatRow>
             <Stat value={num(wk.hours)} label="hours" />
-            <Stat value={money(wk.perHr)} label="per hour" />
+            <Stat value={money(wk.perHr)} label="per hour w/ tips" />
             <Stat value={num(wk.miles, 0)} label="miles" />
           </StatRow>
         </View>
