@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Dashin & Flexin",
+    "slug": "dashin-and-flexin",
+    "scheme": "dashinflexin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0b0b0d",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0b0b0d"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rhondasons.dashinandflexin",
+      "buildNumber": "1",
+      "infoPlist": { "ITSAppUsesNonExemptEncryption": false }
+    },
+    "android": {
+      "package": "com.rhondasons.dashinandflexin",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0b0b0d"
+      }
+    },
+    "plugins": ["expo-router"],
+    "experiments": { "reactCompiler": true },
+    "extra": { "apiBase": "https://gogetem-flex-hq.vercel.app" }
+  }
+}

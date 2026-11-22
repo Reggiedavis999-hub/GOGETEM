@@ -1,0 +1,145 @@
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useRef, useState } from 'react';
+import { Text } from 'react-native';
+import { Actions, Btn, Field, Picker, SheetScreen, Two } from '../components/ui';
+import {
+  PLAT_NAME, c2, cleanNum, fmtDate, fmtTime, isPerHr, minT, money, newId, normPlat, num, overlapWith, parseDateInput, parseHours, parseLocal, parsePay,
+  parseTimeInput, tmin, todayStr,
+} from '../lib/calc';
+import { useStore } from '../lib/store';
+import { C } from '../lib/theme';
+import type { Block, BlockStatus, Platform } from '../lib/types';
+
+const p1 = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) || '';
+
+export default function BlockForm() {
+  const params = useLocalSearchParams();
+  const { entries, me, settings, lastPlat, setLastPlat, saveEntry, setLive, flash } = useStore();
+  const id = p1(params.id);
+  const existing = id ? (entries.find((x) => x.id === id && x.type === 'block') as Block | undefined) : undefined;
+  const isLive = p1(params.live) === '1';
+  const stParam = p1(params.status);
+
+  const initStatus: BlockStatus = (existing?.status ?? (stParam === 'planned' || stParam === 'cancelled' ? stParam : 'done')) as BlockStatus;
+  // "Log results" on a planned block passes status=done with an id: respect the param
+  const [status, setStatus] = useState<BlockStatus>(id && stParam === 'done' ? 'done' : initStatus);
+  const [plat, setPlat] = useState<Platform>(existing ? normPlat(existing.platform) : (p1(params.platform) ? normPlat(p1(params.platform)) : lastPlat));
+  const [date, setDate] = useState(existing?.date || p1(params.date) || todayStr());
+  const [start, setStart] = useState(existing?.start ? fmtTime(existing.start) : p1(params.start) ? fmtTime(p1(params.start)) : '6:00 AM');
+  const initHours = existing?.hours ?? (p1(params.hours) ? +p1(params.hours) : 0);
+  const [hours, setHours] = useState(initHours ? String(initHours) : '');
+  const initEnd = (() => {
+    const st = existing?.start || p1(params.start);
+    return st && initHours > 0 && initHours < 24 ? fmtTime(minT(tmin(st) + Math.round(initHours * 60))) : '';
+  })();
+  const [end, setEnd] = useState(initEnd);
+  const [pay, setPay] = useState(existing?.pay ? String(existing.pay) : p1(params.pay) && p1(params.pay) !== '0' ? p1(params.pay) : '');
+  const [tips, setTips] = useState(existing?.tips ? String(existing.tips) : p1(params.tips) && p1(params.tips) !== '0' ? p1(params.tips) : '');
+  const [miles, setMiles] = useState(existing?.miles ? String(existing.miles) : p1(params.miles) && p1(params.miles) !== '0' ? p1(params.miles) : '');
+  const [orders, setOrders] = useState(existing?.orders ? String(existing.orders) : p1(params.orders) && p1(params.orders) !== '0' ? p1(params.orders) : '');
+  const [station, setStation] = useState(existing ? existing.station : settings.station || '');
+  const [note, setNote] = useState(existing?.note || p1(params.note) || '');
+  const [busy, setBusy] = useState(false);
+  const ack = useRef('');
+
+  const startHM = parseTimeInput(start);
+  const hv = parseHours(hours);
+  const onHours = (t: string) => {
+    setHours(t);
+    const h = parseHours(t);
+    if (startHM && h > 0 && h < 24) setEnd(fmtTime(minT(tmin(startHM) + h * 60)));
+  };
+  const onStart = (t: string) => {
+    setStart(t);
+    const hm = parseTimeInput(t);
+    if (hm && hv > 0 && hv < 24) setEnd(fmtTime(minT(tmin(hm) + hv * 60)));
+  };
+  const onEnd = (t: string) => {
+    setEnd(t);
+    const eh = parseTimeInput(t);
+    if (startHM && eh) {
+      let d = tmin(eh) - tmin(startHM);
+      if (d <= 0) d += 1440;
+      setHours(String(c2(d / 60)));
+    }
+  };
+  const confirmOnce = (key: string, msg: string) => {
+    if (ack.current === key) return true;
+    ack.current = key;
+    flash(msg + ' Tap Save again to keep it.');
+    return false;
+  };
+
+  const save = async () => {
+    if (busy) return;
+    const dateS = parseDateInput(date);
+    const startS = parseTimeInput(start);
+    if (!dateS || !startS) { flash('Add a valid date (like 11/22) and start time (like 6am).'); return; }
+    let hrs = hv;
+    const endS = parseTimeInput(end);
+    if (hrs <= 0 && endS) { let d = tmin(endS) - tmin(startS); if (d <= 0) d += 1440; hrs = c2(d / 60); }
+    if (hrs <= 0) { flash('Add an end time, or the block length in hours like 3.5 or 3h30.'); return; }
+    if (hrs > 16) { flash(`${num(hrs, 0)} hours is too long. Blocks run 1 to 12 hours. Did a time or price land in the Hours box?`); return; }
+    if (plat !== 'flex' && status === 'done' && Math.round(cleanNum(orders)) <= 0) { flash('Add the number of orders so pay per order works.'); return; }
+    let st: BlockStatus = status;
+    let moved = false;
+    const when = parseLocal(dateS, startS);
+    if (st === 'done' && when > new Date()) { st = 'planned'; moved = true; }
+    if (hrs > 12 && !confirmOnce('h' + hrs, `${hrs} hours is long for one block.`)) return;
+    if (st !== 'cancelled') {
+      const ov = overlapWith(entries, existing?.id, plat, when, hrs);
+      if (ov && !confirmOnce('o' + ov.id + startS + hrs, `You already have a ${PLAT_NAME[plat]} block that overlaps (${fmtDate(ov.date)} ${fmtTime(ov.start)}).`)) return;
+    }
+    setLastPlat(plat);
+    setBusy(true);
+    const e: Block = {
+      ...(existing || {}),
+      id: existing?.id || newId(), type: 'block', platform: plat, status: st, date: dateS, start: startS, hours: hrs,
+      pay: parsePay(pay, hrs), tips: cleanNum(tips), miles: cleanNum(miles), orders: Math.round(cleanNum(orders)),
+      station: station.trim(), note: note.trim(),
+      who: existing?.who || me?.id || '', created: existing?.created || Date.now(),
+    };
+    const saved = await saveEntry(e);
+    setBusy(false);
+    if (saved) {
+      if (isLive) setLive(null);
+      router.back();
+      flash(moved ? 'That start time is still ahead, so it is on your schedule as Upcoming.' : st === 'planned' ? 'Upcoming block saved' : st === 'cancelled' ? 'Block cancelled' : 'Block logged ' + money(e.pay + e.tips));
+    }
+  };
+
+  const perHrHint = isPerHr(pay) ? (hv > 0 ? `= ${money(parsePay(pay, hv))} total for ${num(hv, 2)}h` : 'Add the hours to see the total.') : '';
+  const showDone = status === 'done';
+
+  return (
+    <SheetScreen title={existing ? 'Edit block' : status === 'planned' ? 'Upcoming block' : 'Completed block'}>
+      <Picker<BlockStatus> label="Status" value={status} onChange={setStatus} options={[{ k: 'planned', label: 'Upcoming' }, { k: 'done', label: 'Completed' }, { k: 'cancelled', label: 'Cancelled' }]} />
+      <Picker<Platform> label="Platform" value={plat} onChange={setPlat} options={[{ k: 'flex', label: 'Amazon Flex' }, { k: 'doordash', label: 'DoorDash' }, { k: 'ubereats', label: 'Uber Eats' }]} />
+      <Two>
+        <Field label="Date" value={date} onChangeText={setDate} placeholder="11/22 or 2026-11-22" autoCapitalize="none" autoCorrect={false} />
+        <Field label="Start time" value={start} onChangeText={onStart} placeholder="6:00 AM" autoCapitalize="none" autoCorrect={false} />
+      </Two>
+      <Two>
+        <Field label="End time" value={end} onChangeText={onEnd} placeholder="9:30 AM" autoCapitalize="none" autoCorrect={false} />
+        <Field label="Hours (3.5 or 3h30)" value={hours} onChangeText={onHours} placeholder="3.5" autoCapitalize="none" autoCorrect={false} />
+      </Two>
+      <Field label={showDone ? 'Base pay $' : 'Expected pay $'} value={pay} onChangeText={setPay} placeholder="84 or 14/hr" autoCapitalize="none" autoCorrect={false} hint={perHrHint} />
+      {showDone && (
+        <>
+          <Two>
+            <Field label="Miles" value={miles} onChangeText={setMiles} keyboardType="decimal-pad" placeholder="0" />
+            <Field label="Tips $" value={tips} onChangeText={setTips} keyboardType="decimal-pad" placeholder="0" />
+          </Two>
+          <Field label="Orders / deliveries" value={orders} onChangeText={setOrders} keyboardType="number-pad" placeholder="0" />
+        </>
+      )}
+      <Field label="Station / zone / area" value={station} onChangeText={setStation} autoCorrect={false} />
+      <Field label="Note" value={note} onChangeText={setNote} multiline />
+      <Actions>
+        <Btn kind="gold" label={busy ? 'Saving...' : 'Save'} onPress={save} disabled={busy} />
+        <Btn label="Cancel" onPress={() => router.back()} />
+      </Actions>
+      <Text style={{ color: C.mute, fontSize: 12, marginTop: 10 }}>Times accept 6am, 6:30 pm or 18:00. Dates accept 11/22 or 2026-11-22.</Text>
+    </SheetScreen>
+  );
+}
