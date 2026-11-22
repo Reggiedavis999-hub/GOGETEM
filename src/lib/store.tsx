@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { AppState } from 'react-native';
 import { api, ApiError, hasToken, LoadResp, loadToken, MeResp, setApiBase, setToken, writeCount, writesInFlight } from './api';
 import { DEFAULT_SETTINGS, newId } from './calc';
+import { askPermission, ASKED_KEY, REMIND_KEY, syncReminders } from './reminders';
 import type { Entry, LiveDash, Platform, Settings, User } from './types';
 
 const CACHE_KEY = 'df_cache_v2';
@@ -18,6 +19,8 @@ interface Store {
   settings: Settings;
   users: Record<string, User>;
   online: boolean;
+  reminders: boolean;
+  setReminders: (on: boolean) => Promise<boolean>;
   emailReset: boolean;
   bootError: string;
   live: LiveDash | null;
@@ -60,6 +63,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [users, setUsers] = useState<Record<string, User>>({});
   const [online, setOnline] = useState(true);
   const [emailReset, setEmailReset] = useState(false);
+  const [reminders, setRemindersState] = useState(true);
+  const [permVer, setPermVer] = useState(0);
   const [bootError, setBootError] = useState('');
   const [live, setLiveState] = useState<LiveDash | null>(null);
   const [lastPlat, setLastPlatState] = useState<Platform>('flex');
@@ -156,6 +161,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           const p = JSON.parse(l) as LiveDash;
           if (p && p.start && Array.isArray(p.deliveries)) setLiveState(p);
         }
+        const rm = await AsyncStorage.getItem(REMIND_KEY);
+        if (rm === 'off') setRemindersState(false);
         const lp = await AsyncStorage.getItem(PLAT_KEY);
         if (lp === 'flex' || lp === 'doordash' || lp === 'ubereats') setLastPlatState(lp);
       } catch { /* ignore */ }
@@ -163,6 +170,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setReady(true);
     })();
   }, [boot]);
+
+  /* ask for notification permission once, right after the first sign-in */
+  useEffect(() => {
+    if (!ready || !me) return;
+    (async () => {
+      const asked = await AsyncStorage.getItem(ASKED_KEY).catch(() => null);
+      if (asked) return;
+      await AsyncStorage.setItem(ASKED_KEY, '1').catch(() => {});
+      await askPermission();
+      setPermVer((v) => v + 1);
+    })();
+  }, [ready, me]);
+
+  /* keep phone reminders in step with the schedule */
+  useEffect(() => {
+    if (!ready) return;
+    syncReminders(me ? entries : [], !!me && reminders);
+  }, [ready, me, entries, reminders, permVer]);
 
   /* poll every 30s while foregrounded + refresh on resume */
   useEffect(() => {
@@ -283,13 +308,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem(PLAT_KEY, p).catch(() => {});
   }, []);
 
+  const setReminders = useCallback(async (on: boolean) => {
+    if (on) {
+      const ok = await askPermission();
+      setPermVer((v) => v + 1);
+      if (!ok) return false;
+    }
+    setRemindersState(on);
+    AsyncStorage.setItem(REMIND_KEY, on ? 'on' : 'off').catch(() => {});
+    return true;
+  }, []);
+
   const who = useCallback((id?: string) => (id && users[id] ? users[id].name : 'Someone'), [users]);
 
   const value = useMemo<Store>(() => ({
-    ready, me, entries, settings, users, online, emailReset, bootError, live, lastPlat, who,
+    ready, me, entries, settings, users, online, reminders, setReminders, emailReset, bootError, live, lastPlat, who,
     refresh, boot, login, signup, completeSignup, forgotPassword, resetPassword, changePassword, deleteAccount, logout,
     saveEntry, removeEntry, removeMany, saveSettings, setLive, setLastPlat, flash, toast,
-  }), [ready, me, entries, settings, users, online, emailReset, bootError, live, lastPlat, who,
+  }), [ready, me, entries, settings, users, online, reminders, setReminders, emailReset, bootError, live, lastPlat, who,
     refresh, boot, login, signup, completeSignup, forgotPassword, resetPassword, changePassword, deleteAccount, logout,
     saveEntry, removeEntry, removeMany, saveSettings, setLive, setLastPlat, flash, toast]);
 

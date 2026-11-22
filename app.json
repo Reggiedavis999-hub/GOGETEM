@@ -31,7 +31,16 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#f0be2f",
+          "defaultChannel": "block-reminders",
+          "enableRemoteNotifications": false
+        }
+      ]
     ],
     "experiments": {
       "reactCompiler": true

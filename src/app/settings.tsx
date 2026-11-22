@@ -1,14 +1,14 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Linking, Text } from 'react-native';
-import { Actions, Btn, Field, H2, Mut, Note, SheetScreen, useArm } from '../components/ui';
+import { Linking, Switch, Text } from 'react-native';
+import { Actions, Btn, Field, H2, Mut, Note, Row, SheetScreen, useArm } from '../components/ui';
 import { cleanNum } from '../lib/calc';
 import { useStore } from '../lib/store';
 import { C } from '../lib/theme';
 
 export default function Settings() {
-  const { me, settings, saveSettings, logout, changePassword, deleteAccount, flash } = useStore();
+  const { me, settings, saveSettings, logout, changePassword, deleteAccount, reminders, setReminders, flash } = useStore();
   const [goal, setGoal] = useState(settings.goal ? String(settings.goal) : '');
   const [setAside, setSetAside] = useState(String(settings.setAside ?? 25));
   const [station, setStation] = useState(settings.station || '');
@@ -29,6 +29,14 @@ export default function Settings() {
     const patch = { goal: cleanNum(goal), setAside: Math.min(60, cleanNum(setAside)), station: station.trim(), rate: rate.trim() === '' ? '' : String(cleanNum(rate)) };
     if (await saveSettings(patch)) { router.back(); flash('Settings saved'); }
   };
+  const toggleReminders = async (v: boolean) => {
+    const ok = await setReminders(v);
+    if (v && !ok) {
+      flash('Notifications are blocked for this app. Turn them on in your phone settings.');
+      Linking.openSettings().catch(() => {});
+    }
+  };
+
   const savePw = async () => {
     if (pwBusy) return;
     if (!curPw) { setPwErr('Enter your current password.'); return; }
@@ -63,6 +71,12 @@ export default function Settings() {
         <Btn kind="gold" label="Save" onPress={save} />
         <Btn label="Cancel" onPress={() => router.back()} />
       </Actions>
+      <H2>Reminders</H2>
+      <Row>
+        <Text style={{ color: C.text, fontWeight: '700', flex: 1 }}>Block reminders</Text>
+        <Switch value={reminders} onValueChange={toggleReminders} trackColor={{ false: '#3a3a44', true: C.goldLine }} thumbColor={reminders ? C.gold : '#9a978f'} accessibilityLabel="Block reminders" />
+      </Row>
+      <Note>A heads-up 1 hour before each upcoming block, when it starts, and when it ends so you can log your results.</Note>
       <H2>Account</H2>
       <Mut>{me?.email || ''}</Mut>
       {!openPw ? (
