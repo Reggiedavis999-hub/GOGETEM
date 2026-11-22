@@ -2,15 +2,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
-import { api, ApiError, LoadResp, MeResp, setApiBase, writeCount, writesInFlight } from './api';
+import { api, ApiError, hasToken, LoadResp, loadToken, MeResp, setApiBase, setToken, writeCount, writesInFlight } from './api';
 import { DEFAULT_SETTINGS, newId } from './calc';
 import type { Entry, LiveDash, Platform, Settings, User } from './types';
 
-const CACHE_KEY = 'df_cache_v1';
+const CACHE_KEY = 'df_cache_v2';
+const OLD_CACHE_KEY = 'df_cache_v1';
 const LIVE_KEY = 'df_live_v1';
 const PLAT_KEY = 'df_lastplat';
-
-export interface AuthInfo { setup: boolean; canJoin: boolean }
 
 interface Store {
   ready: boolean;
@@ -18,17 +17,23 @@ interface Store {
   entries: Entry[];
   settings: Settings;
   users: Record<string, User>;
-  invite: string;
   online: boolean;
-  authInfo: AuthInfo;
+  emailReset: boolean;
   bootError: string;
   live: LiveDash | null;
   lastPlat: Platform;
   who: (id?: string) => string;
   refresh: () => Promise<void>;
   boot: () => Promise<void>;
-  login: (name: string, password: string) => Promise<void>;
-  signup: (name: string, password: string, invite?: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  /** Creates the account. Returns the recovery code; call completeSignup() once the person has saved it. */
+  signup: (name: string, email: string, password: string) => Promise<string>;
+  completeSignup: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<boolean>;
+  /** Returns a fresh recovery code when a recovery code was used to reset, otherwise ''. */
+  resetPassword: (email: string, code: string, password: string) => Promise<string>;
+  changePassword: (current: string, next: string) => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
   logout: () => Promise<void>;
   saveEntry: (e: Entry) => Promise<Entry | null>;
   removeEntry: (id: string) => Promise<boolean>;
@@ -53,9 +58,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [users, setUsers] = useState<Record<string, User>>({});
-  const [invite, setInvite] = useState('');
   const [online, setOnline] = useState(true);
-  const [authInfo, setAuthInfo] = useState<AuthInfo>({ setup: false, canJoin: false });
+  const [emailReset, setEmailReset] = useState(false);
   const [bootError, setBootError] = useState('');
   const [live, setLiveState] = useState<LiveDash | null>(null);
   const [lastPlat, setLastPlatState] = useState<Platform>('flex');
@@ -63,6 +67,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const sig = useRef('');
   const toastT = useRef<ReturnType<typeof setTimeout> | null>(null);
   const meRef = useRef<User | null>(null);
+  const pending = useRef<{ me: User; token: string } | null>(null);
   useEffect(() => { meRef.current = me; }, [me]);
 
   const flash = useCallback((msg: string) => {
@@ -79,8 +84,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setEntries(ents);
     setSettings(sets);
     setUsers(us);
-    setInvite(j.invite || '');
-    AsyncStorage.setItem(CACHE_KEY, JSON.stringify({ entries: ents, settings: sets, users: j.users || [], me: who, invite: j.invite || '' })).catch(() => {});
+    AsyncStorage.setItem(CACHE_KEY, JSON.stringify({ entries: ents, settings: sets, users: j.users || [], me: who })).catch(() => {});
+  }, []);
+
+  const wipeLocal = useCallback(async () => {
+    await setToken('');
+    setMe(null); meRef.current = null;
+    setEntries([]); setUsers({}); setSettings(DEFAULT_SETTINGS); setLiveState(null);
+    sig.current = '';
+    await AsyncStorage.multiRemove([CACHE_KEY, OLD_CACHE_KEY, LIVE_KEY]).catch(() => {});
   }, []);
 
   const refresh = useCallback(async () => {
@@ -99,9 +111,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     try {
       const j = await api<MeResp>('me');
       setOnline(true);
+      setEmailReset(!!j.emailReset);
       if (!j.me) {
+        if (hasToken()) await wipeLocal();
         setMe(null);
-        setAuthInfo({ setup: !!j.setup, canJoin: !!j.canJoin });
       } else {
         setMe(j.me);
         meRef.current = j.me;
@@ -111,24 +124,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       const err = e as ApiError;
       const raw = await AsyncStorage.getItem(CACHE_KEY).catch(() => null);
-      const c = raw ? JSON.parse(raw) : null;
-      if (err.offline && c && c.me) {
+      let c: { me?: User; entries?: Entry[]; settings?: Partial<Settings>; users?: User[] } | null = null;
+      try { c = raw ? JSON.parse(raw) : null; } catch { c = null; }
+      if (err.offline && c && c.me && hasToken()) {
         setOnline(false);
         setMe(c.me);
         meRef.current = c.me;
         setEntries(c.entries || []);
-        setSettings({ ...DEFAULT_SETTINGS, ...(c.settings || {}) });
+        setSettings({ ...DEFAULT_SETTINGS, ...(c.settings || {}) } as Settings);
         const us: Record<string, User> = {};
         (c.users || []).forEach((u: User) => { us[u.id] = u; });
         setUsers(us);
-        setInvite(c.invite || '');
         flash('Offline. Showing your last saved data.');
       } else {
         setMe(null);
         setBootError(err.message || 'Could not reach the server.');
       }
     }
-  }, [refresh, flash]);
+  }, [refresh, flash, wipeLocal]);
 
   /* first launch */
   useEffect(() => {
@@ -136,6 +149,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (extra.apiBase) setApiBase(extra.apiBase);
     (async () => {
       try {
+        await loadToken();
+        AsyncStorage.removeItem(OLD_CACHE_KEY).catch(() => {});
         const l = await AsyncStorage.getItem(LIVE_KEY);
         if (l) {
           const p = JSON.parse(l) as LiveDash;
@@ -160,32 +175,60 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const wrapAuth = useCallback(async (e: unknown) => {
     const err = e as ApiError;
-    if (err.auth) { setMe(null); setEntries([]); await boot(); }
+    if (err.auth) { await wipeLocal(); await boot(); }
     return err.message || "Couldn't save. Try again.";
-  }, [boot]);
+  }, [boot, wipeLocal]);
 
-  const login = useCallback(async (name: string, password: string) => {
-    const j = await api<{ me: User }>('login', { name, password });
+  const login = useCallback(async (email: string, password: string) => {
+    const j = await api<{ me: User; token: string }>('login', { email, password });
+    await setToken(j.token);
     setMe(j.me); meRef.current = j.me; sig.current = '';
     await refresh();
     flash('Welcome, ' + j.me.name);
   }, [refresh, flash]);
 
-  const signup = useCallback(async (name: string, password: string, inviteCode?: string) => {
-    const body: Record<string, unknown> = { name, password };
-    if (inviteCode) body.invite = inviteCode;
-    const j = await api<{ me: User }>('signup', body);
-    setMe(j.me); meRef.current = j.me; sig.current = '';
-    await refresh();
-    flash('Welcome, ' + j.me.name);
+  const signup = useCallback(async (name: string, email: string, password: string) => {
+    const j = await api<{ me: User; token: string; recoveryCode: string }>('signup', { name, email, password });
+    pending.current = { me: j.me, token: j.token };
+    return j.recoveryCode;
+  }, []);
+
+  const completeSignup = useCallback(async () => {
+    const p = pending.current;
+    if (!p) return;
+    pending.current = null;
+    await setToken(p.token);
+    setMe(p.me); meRef.current = p.me; sig.current = '';
+    await refresh().catch(() => {});
+    flash('Welcome, ' + p.me.name);
   }, [refresh, flash]);
+
+  const forgotPassword = useCallback(async (email: string) => {
+    const j = await api<{ emailed?: boolean }>('forgot', { email });
+    return !!j.emailed;
+  }, []);
+
+  const resetPassword = useCallback(async (email: string, code: string, password: string) => {
+    const j = await api<{ recoveryCode?: string }>('reset', { email, code, password });
+    return j.recoveryCode || '';
+  }, []);
+
+  const changePassword = useCallback(async (current: string, next: string) => {
+    const j = await api<{ token?: string }>('changepw', { current, next });
+    if (j.token) await setToken(j.token);
+  }, []);
+
+  const deleteAccount = useCallback(async (password: string) => {
+    await api('deleteacct', { password });
+    await wipeLocal();
+    await boot();
+  }, [wipeLocal, boot]);
 
   const logout = useCallback(async () => {
     try { await api('logout'); } catch { /* ignore */ }
-    setMe(null); setEntries([]); setUsers({}); setInvite(''); sig.current = '';
-    await AsyncStorage.removeItem(CACHE_KEY).catch(() => {});
+    await wipeLocal();
     await boot();
-  }, [boot]);
+  }, [wipeLocal, boot]);
 
   const saveEntry = useCallback(async (e: Entry): Promise<Entry | null> => {
     try {
@@ -243,10 +286,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const who = useCallback((id?: string) => (id && users[id] ? users[id].name : 'Someone'), [users]);
 
   const value = useMemo<Store>(() => ({
-    ready, me, entries, settings, users, invite, online, authInfo, bootError, live, lastPlat, who,
-    refresh, boot, login, signup, logout, saveEntry, removeEntry, removeMany, saveSettings, setLive, setLastPlat, flash, toast,
-  }), [ready, me, entries, settings, users, invite, online, authInfo, bootError, live, lastPlat, who,
-    refresh, boot, login, signup, logout, saveEntry, removeEntry, removeMany, saveSettings, setLive, setLastPlat, flash, toast]);
+    ready, me, entries, settings, users, online, emailReset, bootError, live, lastPlat, who,
+    refresh, boot, login, signup, completeSignup, forgotPassword, resetPassword, changePassword, deleteAccount, logout,
+    saveEntry, removeEntry, removeMany, saveSettings, setLive, setLastPlat, flash, toast,
+  }), [ready, me, entries, settings, users, online, emailReset, bootError, live, lastPlat, who,
+    refresh, boot, login, signup, completeSignup, forgotPassword, resetPassword, changePassword, deleteAccount, logout,
+    saveEntry, removeEntry, removeMany, saveSettings, setLive, setLastPlat, flash, toast]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

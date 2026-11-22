@@ -10,7 +10,7 @@ export const PLAT_NAME: Record<ExpPlatform, string> = {
 export const EXP_CATS = ['Gas', 'Maintenance', 'Car wash', 'Phone', 'Parking / Tolls', 'Supplies', 'Other'];
 export const VEHICLE_CATS = ['Gas', 'Maintenance', 'Car wash'];
 export const DEFAULT_SETTINGS: Settings = {
-  nameA: 'Fully', nameB: 'Mama', goal: 800, setAside: 25, station: '', rate: '',
+  nameA: '', nameB: '', goal: 800, setAside: 25, station: '', rate: '',
 };
 export const GENERAL_WINDOWS = [
   { a: 5, b: 7, l: 'Early morning' },

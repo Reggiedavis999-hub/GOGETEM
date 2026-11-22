@@ -54,6 +54,7 @@ export interface Settings {
 export interface User {
   id: string;
   name: string;
+  email?: string;
 }
 
 export interface LiveDelivery {

@@ -2,7 +2,7 @@
 
 Native iPhone + Android app (Expo SDK 58, React Native, Expo Router, TypeScript) for Amazon Flex, DoorDash and Uber Eats: earnings, live dash timer, drop logger, schedule, mileage write-off, expenses, CSV export.
 
-It signs in to the same household backend as the Flex HQ web app (`https://gogetem-flex-hq.vercel.app/api/hq`), so your existing blocks, miles, expenses and Mama's login carry over. Last-synced data is cached for offline viewing.
+Every user gets a private account (email + password). Accounts, sign-in, password reset (emailed code or recovery code), change password and account deletion are handled by the Dashin & Flexin API (`https://dashin-flexin-api.vercel.app/api/hq`). The sign-in token is kept in the phone's secure storage. Last-synced data is cached for offline viewing.
 
 ## First run
 

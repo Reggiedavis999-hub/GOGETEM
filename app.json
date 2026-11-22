@@ -30,13 +30,14 @@
       }
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-secure-store"
     ],
     "experiments": {
       "reactCompiler": true
     },
     "extra": {
-      "apiBase": "https://gogetem-flex-hq.vercel.app",
+      "apiBase": "https://dashin-flexin-api.vercel.app",
       "eas": {
         "projectId": "a940736f-5a50-44ea-a45b-46b7fb614868"
       }

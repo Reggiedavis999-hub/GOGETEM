@@ -1,24 +1,57 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Share, Text } from 'react-native';
-import { Actions, Btn, Field, H2, Mut, Note, SheetScreen } from '../components/ui';
+import { Linking, Text } from 'react-native';
+import { Actions, Btn, Field, H2, Mut, Note, SheetScreen, useArm } from '../components/ui';
 import { cleanNum } from '../lib/calc';
 import { useStore } from '../lib/store';
 import { C } from '../lib/theme';
 
 export default function Settings() {
-  const { me, settings, users, invite, saveSettings, logout, flash } = useStore();
+  const { me, settings, saveSettings, logout, changePassword, deleteAccount, flash } = useStore();
   const [goal, setGoal] = useState(settings.goal ? String(settings.goal) : '');
   const [setAside, setSetAside] = useState(String(settings.setAside ?? 25));
   const [station, setStation] = useState(settings.station || '');
   const [rate, setRate] = useState(settings.rate || '');
-  const ids = Object.keys(users);
+  const [openPw, setOpenPw] = useState(false);
+  const [curPw, setCurPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [newPw2, setNewPw2] = useState('');
+  const [pwErr, setPwErr] = useState('');
+  const [pwBusy, setPwBusy] = useState(false);
+  const [delPw, setDelPw] = useState('');
+  const [delErr, setDelErr] = useState('');
+  const [delBusy, setDelBusy] = useState(false);
+  const { armed, tap } = useArm(4000);
+  const site = ((Constants.expoConfig?.extra || {}) as { apiBase?: string }).apiBase || 'https://dashin-flexin-api.vercel.app';
 
   const save = async () => {
     const patch = { goal: cleanNum(goal), setAside: Math.min(60, cleanNum(setAside)), station: station.trim(), rate: rate.trim() === '' ? '' : String(cleanNum(rate)) };
     if (await saveSettings(patch)) { router.back(); flash('Settings saved'); }
   };
+  const savePw = async () => {
+    if (pwBusy) return;
+    if (!curPw) { setPwErr('Enter your current password.'); return; }
+    if (newPw.length < 8) { setPwErr('Use at least 8 characters for the new password.'); return; }
+    if (newPw !== newPw2) { setPwErr('The two new passwords do not match.'); return; }
+    setPwErr(''); setPwBusy(true);
+    try {
+      await changePassword(curPw, newPw);
+      setOpenPw(false); setCurPw(''); setNewPw(''); setNewPw2('');
+      flash('Password changed');
+    } catch (e) { setPwErr((e as Error).message || 'Could not change the password.'); } finally { setPwBusy(false); }
+  };
+
+  const delAcct = async () => {
+    if (delBusy) return;
+    if (!delPw) { setDelErr('Enter your password to confirm.'); return; }
+    setDelErr(''); setDelBusy(true);
+    try {
+      router.back();
+      await deleteAccount(delPw);
+    } catch (e) { setDelErr((e as Error).message || 'Could not delete the account.'); setDelBusy(false); }
+  };
+
   return (
     <SheetScreen title="Settings">
       <Mut>Signed in as <Text style={{ fontWeight: '800', color: C.text }}>{me?.name}</Text></Mut>
@@ -30,16 +63,37 @@ export default function Settings() {
         <Btn kind="gold" label="Save" onPress={save} />
         <Btn label="Cancel" onPress={() => router.back()} />
       </Actions>
-      <H2>Household</H2>
-      <Mut>{ids.map((k) => users[k].name).join(' and ')}</Mut>
-      {ids.length < 2 && !!invite && (
+      <H2>Account</H2>
+      <Mut>{me?.email || ''}</Mut>
+      {!openPw ? (
+        <Actions>
+          <Btn sm label="Change password" onPress={() => setOpenPw(true)} />
+          <Btn sm label="Sign out" onPress={async () => { router.back(); await logout(); }} />
+        </Actions>
+      ) : (
         <>
-          <Text style={{ color: C.text, marginTop: 10 }}>Invite code: <Text style={{ fontSize: 22, fontWeight: '800', letterSpacing: 2 }}>{invite}</Text></Text>
-          <Actions><Btn sm label="Share code" onPress={() => Share.share({ message: `Dashin & Flexin invite code: ${invite}` }).catch(() => flash(`Code: ${invite}`))} /></Actions>
-          <Note>Your partner opens this app, taps "I have an invite code", and creates their account. Only share the code with them.</Note>
+          <Field label="Current password" value={curPw} onChangeText={setCurPw} secureTextEntry autoCapitalize="none" autoComplete="current-password" maxLength={200} />
+          <Field label="New password" value={newPw} onChangeText={setNewPw} secureTextEntry autoCapitalize="none" autoComplete="new-password" maxLength={200} hint="At least 8 characters." />
+          <Field label="Confirm new password" value={newPw2} onChangeText={setNewPw2} secureTextEntry autoCapitalize="none" autoComplete="new-password" maxLength={200} />
+          {!!pwErr && <Text style={{ color: C.red, marginTop: 8 }} accessibilityLiveRegion="polite">{pwErr}</Text>}
+          <Actions>
+            <Btn kind="gold" label={pwBusy ? 'One sec...' : 'Update password'} onPress={savePw} disabled={pwBusy} />
+            <Btn label="Cancel" onPress={() => { setOpenPw(false); setPwErr(''); setCurPw(''); setNewPw(''); setNewPw2(''); }} />
+          </Actions>
         </>
       )}
-      <Actions><Btn kind="danger" label="Sign out" onPress={async () => { router.back(); await logout(); }} /></Actions>
+      <H2>Legal</H2>
+      <Actions>
+        <Btn sm label="Privacy Policy" onPress={() => Linking.openURL(`${site}/privacy.html`).catch(() => {})} />
+        <Btn sm label="Terms" onPress={() => Linking.openURL(`${site}/terms.html`).catch(() => {})} />
+      </Actions>
+      <H2>Delete account</H2>
+      <Mut>This permanently deletes your account and every block, drop and expense in it. It cannot be undone.</Mut>
+      <Field label="Password" value={delPw} onChangeText={setDelPw} secureTextEntry autoCapitalize="none" autoComplete="current-password" maxLength={200} />
+      {!!delErr && <Text style={{ color: C.red, marginTop: 8 }} accessibilityLiveRegion="polite">{delErr}</Text>}
+      <Actions>
+        <Btn kind="danger" label={delBusy ? 'Deleting...' : armed === 'del' ? 'Tap again to delete forever' : 'Delete my account'} disabled={delBusy} onPress={() => tap('del', delAcct)} />
+      </Actions>
       <Note>Version {Constants.expoConfig?.version ?? '1.0.0'}</Note>
     </SheetScreen>
   );
