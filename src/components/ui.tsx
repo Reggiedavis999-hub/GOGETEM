@@ -16,10 +16,13 @@ export const useReveal = () => useContext(RevealCtx);
  * Android draws edge to edge and does not resize for the keyboard, so we pad the bottom by the keyboard height
  * and scroll the focused field into view. iPhone keeps its native insets handling.
  */
+/** The instance type behind <ScrollView ref>, which React Native 0.88 does not export by name. */
+type ScrollInstance = React.ComponentProps<typeof ScrollView> extends { ref?: React.Ref<infer I> } ? I : never;
+
 export function KeyboardScroll({
   children, contentContainerStyle, showsVerticalScrollIndicator,
 }: { children: React.ReactNode; contentContainerStyle?: StyleProp<ViewStyle>; showsVerticalScrollIndicator?: boolean }) {
-  const ref = useRef<ScrollView>(null);
+  const ref = useRef<ScrollInstance>(null);
   const offset = useRef(0);
   const kbH = useRef(0);
   const kbTop = useRef(0);
