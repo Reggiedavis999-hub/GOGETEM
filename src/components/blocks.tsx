@@ -164,7 +164,7 @@ function LiveBody({ armed, tap, flash, setLive }: { armed: string | null; tap: (
         <Stat value={r.perHr > 0 ? money(r.perHr) : '--'} label="per hour w/ tips" />
         <Stat value={String(r.n)} label="deliveries" />
       </StatRow>
-      <Mut style={{ marginVertical: 8 }}>Pay {money(r.pay)} · Tips {money(r.tips)} · {num(r.miles, 1)} mi{r.n ? ` · ${money(r.gross / r.n)}/delivery` : ''}</Mut>
+      <Mut style={{ marginVertical: 8 }}>Total {money(r.gross)} = {money(r.pay)} base + {money(r.tips)} tips · {num(r.miles, 1)} mi{r.n ? ` · ${money(r.gross / r.n)}/delivery` : ''}</Mut>
       {!!live.rate && live.rate > 0 && (
         <Text style={{ color: C.text, fontSize: 13, marginBottom: 8 }}>Base ${num(live.rate, 2)}/hr = <Text style={{ fontWeight: '800' }}>{money(r.base)}</Text> so far · Actual <Text style={{ fontWeight: '800' }}>{money(r.gross)}</Text></Text>
       )}

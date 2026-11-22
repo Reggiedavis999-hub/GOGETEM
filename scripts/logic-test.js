@@ -53,4 +53,19 @@ const ls = k.liveSum(L, 3600000);
 assert.equal(ls.gross, 10); assert.equal(ls.base, 13.25); assert.equal(ls.perHr, 10);
 const nw = k.nextWindow(k.GENERAL_WINDOWS, new Date(2026, 10, 22, 10, 0));
 assert.equal(nw.live, true);
+assert.ok(csv.split('\n')[0].includes('base_pay,tips,total'));
+// tips inside the total: DoorDash $70 with $20 tips is $70, not $90
+let sp = k.splitPay(70, 20, true);
+assert.deepEqual([sp.base, sp.tips, sp.total, sp.bad], [50, 20, 70, false]);
+// tips on top: $100 pay + $50 tips is $150
+sp = k.splitPay(100, 50, false);
+assert.deepEqual([sp.base, sp.tips, sp.total, sp.bad], [100, 50, 150, false]);
+// tips larger than the total are rejected
+assert.equal(k.splitPay(10, 20, true).bad, true);
+// no tips
+sp = k.splitPay(84, 0, true);
+assert.deepEqual([sp.base, sp.tips, sp.total], [84, 0, 84]);
+// float safety
+sp = k.splitPay(70.1, 20.1, true);
+assert.equal(sp.base, 50);
 console.log('logic tests passed');

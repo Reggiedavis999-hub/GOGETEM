@@ -71,8 +71,8 @@ function Summary({ year, setYear }: { year: number; setYear: (y: number) => void
         <Text style={{ color: C.text, fontSize: 38, fontWeight: '800' }}>{money(t.gross)}</Text>
         <Mut>Gross{P === 'all' ? ' from all platforms' : ' from ' + PLAT_NAME[P as 'flex']} · {t.n} block{t.n === 1 ? '' : 's'} · {num(t.hours)} hrs · {money(t.perHr)}/hr with tips</Mut>
         <View style={{ marginTop: 12 }}>
-          <TableRow cells={['Pay', money(t.pay)]} />
-          <TableRow cells={['Tips', money(t.tips)]} />
+          <TableRow cells={['Base pay (without tips)', money(t.pay)]} />
+          <TableRow cells={['Tips (already in the total)', money(t.tips)]} />
           <TableRow cells={['Per hour, base pay only', money(t.hours > 0 ? t.pay / t.hours : 0)]} />
           <TableRow cells={['Per hour, with tips', money(t.perHr)]} />
           {t.orders > 0 && <TableRow cells={['Orders logged', num(t.orders, 0)]} />}

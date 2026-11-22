@@ -228,6 +228,18 @@ export function sumExpenses(list: Expense[]): ExpSum {
 export const expensesFor = (list: Expense[], plat: string) => (plat === 'all' ? list : list.filter((e) => expPlat(e) === plat));
 export const profitOf = (gross: number, deduct: number, other: number) => c2(gross - deduct - other);
 
+/** Splits what the person typed into base pay and tips. tipsIn: the typed amount is the total and tips are part of it. */
+export function splitPay(entered: number, tips: number, tipsIn: boolean): { base: number; tips: number; total: number; bad: boolean } {
+  const e = c2(Math.max(0, entered || 0));
+  const t = c2(Math.max(0, tips || 0));
+  if (tipsIn) {
+    const bad = t > e + 0.004;
+    const base = bad ? 0 : c2(e - t);
+    return { base, tips: t, total: c2(base + t), bad };
+  }
+  return { base: e, tips: t, total: c2(e + t), bad: false };
+}
+
 export function rateText(e: Block): string {
   const g = (+e.pay || 0) + (+e.tips || 0);
   let t = (+e.hours > 0 ? money(g / e.hours) : '$0.00') + '/hr' + (+e.tips > 0 ? ' with tips' : '');
@@ -343,12 +355,12 @@ const csvCell = (v: unknown) => {
 };
 export function buildCsv(es: Entry[], y: number, who: (id: string) => string, override: string, now = new Date()): string {
   const d = yearData(es, y, now);
-  const rows: unknown[][] = [['type', 'platform', 'date', 'start', 'hours', 'pay', 'tips', 'miles', 'orders', 'mileage_rate', 'station', 'who', 'category', 'amount', 'note']];
+  const rows: unknown[][] = [['type', 'platform', 'date', 'start', 'hours', 'base_pay', 'tips', 'total', 'miles', 'orders', 'mileage_rate', 'station', 'who', 'category', 'amount', 'note']];
   [...d.blocks].sort((a, b) => ((a.date + a.start) > (b.date + b.start) ? 1 : -1)).forEach((e) => {
-    rows.push(['block', normPlat(e.platform), e.date, e.start, e.hours, e.pay, e.tips, e.miles, e.orders || '', rateFor(e.date, override), e.station || '', who(e.who), '', '', e.note || '']);
+    rows.push(['block', normPlat(e.platform), e.date, e.start, e.hours, e.pay, e.tips, c2((+e.pay || 0) + (+e.tips || 0)), e.miles, e.orders || '', rateFor(e.date, override), e.station || '', who(e.who), '', '', e.note || '']);
   });
   [...d.ex].sort((a, b) => (a.date > b.date ? 1 : -1)).forEach((e) => {
-    rows.push(['expense', expPlat(e), e.date, '', '', '', '', '', '', '', '', who(e.who), e.cat, e.amt, e.note || '']);
+    rows.push(['expense', expPlat(e), e.date, '', '', '', '', '', '', '', '', '', who(e.who), e.cat, e.amt, e.note || '']);
   });
   return rows.map((r) => r.map(csvCell).join(',')).join('\n');
 }

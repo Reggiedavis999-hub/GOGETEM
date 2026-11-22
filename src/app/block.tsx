@@ -3,7 +3,7 @@ import React, { useRef, useState } from 'react';
 import { Text } from 'react-native';
 import { Actions, Btn, Field, Picker, SheetScreen, Two } from '../components/ui';
 import {
-  PLAT_NAME, c2, cleanNum, fmtDate, fmtTime, isPerHr, minT, money, newId, normPlat, num, overlapWith, parseDateInput, parseHours, parseLocal, parsePay,
+  PLAT_NAME, c2, cleanNum, splitPay, fmtDate, fmtTime, isPerHr, minT, money, newId, normPlat, num, overlapWith, parseDateInput, parseHours, parseLocal, parsePay,
   parseTimeInput, tmin, todayStr,
 } from '../lib/calc';
 import { useStore } from '../lib/store';
@@ -22,7 +22,8 @@ export default function BlockForm() {
 
   const initStatus: BlockStatus = (existing?.status ?? (stParam === 'planned' || stParam === 'cancelled' ? stParam : 'done')) as BlockStatus;
   // "Log results" on a planned block passes status=done with an id: respect the param
-  const [status, setStatus] = useState<BlockStatus>(id && stParam === 'done' ? 'done' : initStatus);
+  const statusInit: BlockStatus = id && stParam === 'done' ? 'done' : initStatus;
+  const [status, setStatus] = useState<BlockStatus>(statusInit);
   const [plat, setPlat] = useState<Platform>(existing ? normPlat(existing.platform) : (p1(params.platform) ? normPlat(p1(params.platform)) : lastPlat));
   const [date, setDate] = useState(existing?.date || p1(params.date) || todayStr());
   const [start, setStart] = useState(existing?.start ? fmtTime(existing.start) : p1(params.start) ? fmtTime(p1(params.start)) : '6:00 AM');
@@ -33,8 +34,12 @@ export default function BlockForm() {
     return st && initHours > 0 && initHours < 24 ? fmtTime(minT(tmin(st) + Math.round(initHours * 60))) : '';
   })();
   const [end, setEnd] = useState(initEnd);
-  const [pay, setPay] = useState(existing?.pay ? String(existing.pay) : p1(params.pay) && p1(params.pay) !== '0' ? p1(params.pay) : '');
-  const [tips, setTips] = useState(existing?.tips ? String(existing.tips) : p1(params.tips) && p1(params.tips) !== '0' ? p1(params.tips) : '');
+  const rawPay = existing ? +existing.pay || 0 : +p1(params.pay) || 0;
+  const rawTips = existing ? +existing.tips || 0 : +p1(params.tips) || 0;
+  // Default: the money field is what the app shows as your TOTAL, and tips are a part of it.
+  const [tipsMode, setTipsMode] = useState<'in' | 'on'>('in');
+  const [pay, setPay] = useState(() => { const v = statusInit === 'done' ? c2(rawPay + rawTips) : rawPay; return v ? String(v) : ''; });
+  const [tips, setTips] = useState(rawTips ? String(rawTips) : '');
   const [miles, setMiles] = useState(existing?.miles ? String(existing.miles) : p1(params.miles) && p1(params.miles) !== '0' ? p1(params.miles) : '');
   const [orders, setOrders] = useState(existing?.orders ? String(existing.orders) : p1(params.orders) && p1(params.orders) !== '0' ? p1(params.orders) : '');
   const [station, setStation] = useState(existing ? existing.station : settings.station || '');
@@ -63,6 +68,17 @@ export default function BlockForm() {
       setHours(String(c2(d / 60)));
     }
   };
+  const switchTipsMode = (k: 'in' | 'on') => {
+    if (k === tipsMode) return;
+    const plain = /^\s*\d+(\.\d+)?\s*$/;
+    if (plain.test(pay) && (tips.trim() === '' || plain.test(tips))) {
+      const p = +pay;
+      const t = tips.trim() === '' ? 0 : +tips;
+      const next = k === 'on' ? Math.max(0, c2(p - t)) : c2(p + t);
+      setPay(next ? String(next) : '');
+    }
+    setTipsMode(k);
+  };
   const confirmOnce = (key: string, msg: string) => {
     if (ack.current === key) return true;
     ack.current = key;
@@ -81,6 +97,8 @@ export default function BlockForm() {
     if (hrs <= 0) { flash('Add an end time, or the block length in hours like 3.5 or 3h30.'); return; }
     if (hrs > 16) { flash(`${num(hrs, 0)} hours is too long. Blocks run 1 to 12 hours. Did a time or price land in the Hours box?`); return; }
     if (plat !== 'flex' && status === 'done' && Math.round(cleanNum(orders)) <= 0) { flash('Add the number of orders so pay per order works.'); return; }
+    const sp = splitPay(parsePay(pay, hrs), cleanNum(tips), tipsMode === 'in');
+    if (sp.bad) { flash('Your tips are more than your total. The total already includes the tips, so check the two numbers.'); return; }
     let st: BlockStatus = status;
     let moved = false;
     const when = parseLocal(dateS, startS);
@@ -95,7 +113,7 @@ export default function BlockForm() {
     const e: Block = {
       ...(existing || {}),
       id: existing?.id || newId(), type: 'block', platform: plat, status: st, date: dateS, start: startS, hours: hrs,
-      pay: parsePay(pay, hrs), tips: cleanNum(tips), miles: cleanNum(miles), orders: Math.round(cleanNum(orders)),
+      pay: sp.base, tips: sp.tips, miles: cleanNum(miles), orders: Math.round(cleanNum(orders)),
       station: station.trim(), note: note.trim(),
       who: existing?.who || me?.id || '', created: existing?.created || Date.now(),
     };
@@ -110,8 +128,11 @@ export default function BlockForm() {
 
   const perHrHint = isPerHr(pay) ? (hv > 0 ? `= ${money(parsePay(pay, hv))} total for ${num(hv, 2)}h` : 'Add the hours to see the total.') : '';
   const showDone = status === 'done';
-  const previewBase = hv > 0 ? parsePay(pay, hv) : 0;
-  const previewTips = cleanNum(tips);
+  const pv = splitPay(parsePay(pay, hv), cleanNum(tips), tipsMode === 'in');
+  const tipsTooBig = pv.bad;
+  const baseNum = pv.base;
+  const tipNum = pv.tips;
+  const totalNum = pv.total;
 
   return (
     <SheetScreen title={existing ? 'Edit block' : status === 'planned' ? 'Upcoming block' : 'Completed block'}>
@@ -125,17 +146,21 @@ export default function BlockForm() {
         <Field label="End time" value={end} onChangeText={onEnd} placeholder="9:30 AM" autoCapitalize="none" autoCorrect={false} />
         <Field label="Hours (3.5 or 3h30)" value={hours} onChangeText={onHours} placeholder="3.5" autoCapitalize="none" autoCorrect={false} />
       </Two>
-      <Field label={showDone ? 'Base pay $' : 'Expected pay $'} value={pay} onChangeText={setPay} placeholder="84 or 14/hr" autoCapitalize="none" autoCorrect={false} hint={perHrHint} />
+      {showDone && (
+        <Picker<'in' | 'on'> label="How do you count tips?" value={tipsMode} onChange={switchTipsMode} options={[{ k: 'in', label: 'Tips are inside my total' }, { k: 'on', label: 'Tips are extra, on top' }]} />
+      )}
+      <Field label={showDone ? (tipsMode === 'in' ? 'Total earned $ (tips included)' : 'Base pay $ (without tips)') : 'Expected pay $'} value={pay} onChangeText={setPay} placeholder="84 or 14/hr" autoCapitalize="none" autoCorrect={false} hint={perHrHint} />
       {showDone && (
         <>
           <Two>
             <Field label="Miles" value={miles} onChangeText={setMiles} keyboardType="decimal-pad" placeholder="0" />
-            <Field label="Tips $" value={tips} onChangeText={setTips} keyboardType="decimal-pad" placeholder="0" />
+            <Field label={tipsMode === 'in' ? 'Tips $ (part of total)' : 'Tips $ (extra)'} value={tips} onChangeText={setTips} keyboardType="decimal-pad" placeholder="0" />
           </Two>
           <Field label="Orders / deliveries" value={orders} onChangeText={setOrders} keyboardType="number-pad" placeholder="0" />
-          {hv > 0 && previewBase + previewTips > 0 && (
-            <Text style={{ color: C.mute, fontSize: 13, marginTop: 10 }}>
-              {money(previewBase + previewTips)} total for {num(hv, 2)}h: {money((previewBase + previewTips) / hv)}/hr with tips · {money(previewBase / hv)}/hr base pay only
+          {tipsTooBig && <Text style={{ color: C.red, fontSize: 13, marginTop: 10 }}>Tips are more than the total. The total should include the tips.</Text>}
+          {!tipsTooBig && totalNum > 0 && (
+            <Text style={{ color: C.text, fontSize: 13, marginTop: 10, lineHeight: 19 }}>
+              {money(totalNum)} total = {money(baseNum)} base + {money(tipNum)} tips{hv > 0 ? `\n${money(totalNum / hv)}/hr with tips · ${money(baseNum / hv)}/hr base only` : ''}
             </Text>
           )}
         </>
