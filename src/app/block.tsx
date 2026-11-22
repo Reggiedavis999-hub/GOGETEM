@@ -36,8 +36,7 @@ export default function BlockForm() {
   const [end, setEnd] = useState(initEnd);
   const rawPay = existing ? +existing.pay || 0 : +p1(params.pay) || 0;
   const rawTips = existing ? +existing.tips || 0 : +p1(params.tips) || 0;
-  // Default: the money field is what the app shows as your TOTAL, and tips are a part of it.
-  const [tipsMode, setTipsMode] = useState<'in' | 'on'>('in');
+  // The money field is your TOTAL. Tips are part of it, never added on top.
   const [pay, setPay] = useState(() => { const v = statusInit === 'done' ? c2(rawPay + rawTips) : rawPay; return v ? String(v) : ''; });
   const [tips, setTips] = useState(rawTips ? String(rawTips) : '');
   const [miles, setMiles] = useState(existing?.miles ? String(existing.miles) : p1(params.miles) && p1(params.miles) !== '0' ? p1(params.miles) : '');
@@ -68,17 +67,6 @@ export default function BlockForm() {
       setHours(String(c2(d / 60)));
     }
   };
-  const switchTipsMode = (k: 'in' | 'on') => {
-    if (k === tipsMode) return;
-    const plain = /^\s*\d+(\.\d+)?\s*$/;
-    if (plain.test(pay) && (tips.trim() === '' || plain.test(tips))) {
-      const p = +pay;
-      const t = tips.trim() === '' ? 0 : +tips;
-      const next = k === 'on' ? Math.max(0, c2(p - t)) : c2(p + t);
-      setPay(next ? String(next) : '');
-    }
-    setTipsMode(k);
-  };
   const confirmOnce = (key: string, msg: string) => {
     if (ack.current === key) return true;
     ack.current = key;
@@ -97,7 +85,7 @@ export default function BlockForm() {
     if (hrs <= 0) { flash('Add an end time, or the block length in hours like 3.5 or 3h30.'); return; }
     if (hrs > 16) { flash(`${num(hrs, 0)} hours is too long. Blocks run 1 to 12 hours. Did a time or price land in the Hours box?`); return; }
     if (plat !== 'flex' && status === 'done' && Math.round(cleanNum(orders)) <= 0) { flash('Add the number of orders so pay per order works.'); return; }
-    const sp = splitPay(parsePay(pay, hrs), cleanNum(tips), tipsMode === 'in');
+    const sp = splitPay(parsePay(pay, hrs), cleanNum(tips), true);
     if (sp.bad) { flash('Your tips are more than your total. The total already includes the tips, so check the two numbers.'); return; }
     let st: BlockStatus = status;
     let moved = false;
@@ -128,7 +116,7 @@ export default function BlockForm() {
 
   const perHrHint = isPerHr(pay) ? (hv > 0 ? `= ${money(parsePay(pay, hv))} total for ${num(hv, 2)}h` : 'Add the hours to see the total.') : '';
   const showDone = status === 'done';
-  const pv = splitPay(parsePay(pay, hv), cleanNum(tips), tipsMode === 'in');
+  const pv = splitPay(parsePay(pay, hv), cleanNum(tips), true);
   const tipsTooBig = pv.bad;
   const baseNum = pv.base;
   const tipNum = pv.tips;
@@ -146,15 +134,12 @@ export default function BlockForm() {
         <Field label="End time" value={end} onChangeText={onEnd} placeholder="9:30 AM" autoCapitalize="none" autoCorrect={false} />
         <Field label="Hours (3.5 or 3h30)" value={hours} onChangeText={onHours} placeholder="3.5" autoCapitalize="none" autoCorrect={false} />
       </Two>
-      {showDone && (
-        <Picker<'in' | 'on'> label="How do you count tips?" value={tipsMode} onChange={switchTipsMode} options={[{ k: 'in', label: 'Tips are inside my total' }, { k: 'on', label: 'Tips are extra, on top' }]} />
-      )}
-      <Field label={showDone ? (tipsMode === 'in' ? 'Total earned $ (tips included)' : 'Base pay $ (without tips)') : 'Expected pay $'} value={pay} onChangeText={setPay} placeholder="84 or 14/hr" autoCapitalize="none" autoCorrect={false} hint={perHrHint} />
+      <Field label={showDone ? 'Total earned $ (tips included)' : 'Expected pay $'} value={pay} onChangeText={setPay} placeholder="84 or 14/hr" autoCapitalize="none" autoCorrect={false} hint={perHrHint} />
       {showDone && (
         <>
           <Two>
             <Field label="Miles" value={miles} onChangeText={setMiles} keyboardType="decimal-pad" placeholder="0" />
-            <Field label={tipsMode === 'in' ? 'Tips $ (part of total)' : 'Tips $ (extra)'} value={tips} onChangeText={setTips} keyboardType="decimal-pad" placeholder="0" />
+            <Field label="Tips $ (part of total)" value={tips} onChangeText={setTips} keyboardType="decimal-pad" placeholder="0" />
           </Two>
           <Field label="Orders / deliveries" value={orders} onChangeText={setOrders} keyboardType="number-pad" placeholder="0" />
           {tipsTooBig && <Text style={{ color: C.red, fontSize: 13, marginTop: 10 }}>Tips are more than the total. The total should include the tips.</Text>}
