@@ -2,9 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
-import { api, ApiError, hasToken, LoadResp, loadToken, MeResp, setApiBase, setToken, writeCount, writesInFlight } from './api';
+import { api, ApiError, hasToken, LoadResp, loadToken, MeResp, setApiBase, setToken, siteOrigin, writeCount, writesInFlight } from './api';
 import { DEFAULT_SETTINGS, newId } from './calc';
-import { askPermission, ASKED_KEY, REMIND_KEY, syncReminders } from './reminders';
+import { askPermission, ASKED_KEY, NOTIFS_SUPPORTED, REMIND_KEY, syncReminders } from './reminders';
 import type { Entry, LiveDash, Platform, Settings, User } from './types';
 
 const CACHE_KEY = 'df_cache_v2';
@@ -151,7 +151,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   /* first launch */
   useEffect(() => {
     const extra = (Constants.expoConfig?.extra || {}) as { apiBase?: string };
-    if (extra.apiBase) setApiBase(extra.apiBase);
+    setApiBase(siteOrigin(extra.apiBase));
     (async () => {
       try {
         await loadToken();
@@ -173,7 +173,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   /* ask for notification permission once, right after the first sign-in */
   useEffect(() => {
-    if (!ready || !me) return;
+    if (!NOTIFS_SUPPORTED || !ready || !me) return;
     (async () => {
       const asked = await AsyncStorage.getItem(ASKED_KEY).catch(() => null);
       if (asked) return;

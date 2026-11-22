@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import type { Entry, Settings, User } from './types';
 
 export class ApiError extends Error {
@@ -16,14 +17,25 @@ let TOKEN = '';
 
 export const setApiBase = (b: string) => { BASE = b.replace(/\/+$/, ''); };
 
+const IS_WEB = Platform.OS === 'web' && typeof window !== 'undefined';
+
+/** Where the API and the Terms/Privacy pages live. The web version talks to its own address, which forwards /api to the backend. */
+export const siteOrigin = (configured?: string): string =>
+  (IS_WEB ? window.location.origin : configured || 'https://dashin-flexin-api.vercel.app').replace(/\/+$/, '');
+
 /** The sign-in token lives in the phone's secure storage (Keychain on iPhone, Keystore on Android). */
 export async function loadToken(): Promise<void> {
-  try { TOKEN = (await SecureStore.getItemAsync(TOKEN_KEY)) || ''; } catch { TOKEN = ''; }
+  try {
+    TOKEN = (IS_WEB ? window.localStorage.getItem(TOKEN_KEY) : await SecureStore.getItemAsync(TOKEN_KEY)) || '';
+  } catch { TOKEN = ''; }
 }
 export async function setToken(t: string): Promise<void> {
   TOKEN = t;
   try {
-    if (t) await SecureStore.setItemAsync(TOKEN_KEY, t);
+    if (IS_WEB) {
+      if (t) window.localStorage.setItem(TOKEN_KEY, t);
+      else window.localStorage.removeItem(TOKEN_KEY);
+    } else if (t) await SecureStore.setItemAsync(TOKEN_KEY, t);
     else await SecureStore.deleteItemAsync(TOKEN_KEY);
   } catch { /* secure storage unavailable: token stays in memory for this session */ }
 }

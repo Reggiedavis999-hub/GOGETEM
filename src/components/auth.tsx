@@ -2,9 +2,11 @@ import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
 import {
-  ImageBackground, KeyboardAvoidingView, Linking, Platform, Pressable, Share, StyleSheet, Text, TextInput, useWindowDimensions, View,
+  ImageBackground, KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { siteOrigin } from '../lib/api';
+import { shareText } from '../lib/share';
 import { useStore } from '../lib/store';
 import { C } from '../lib/theme';
 import { Btn, KeyboardScroll, s, useReveal } from './ui';
@@ -16,10 +18,7 @@ type Mode = 'signin' | 'signup' | 'forgot' | 'reset' | 'code';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-const siteBase = () => {
-  const extra = (Constants.expoConfig?.extra || {}) as { apiBase?: string };
-  return (extra.apiBase || 'https://dashin-flexin-api.vercel.app').replace(/\/+$/, '');
-};
+const siteBase = () => siteOrigin(((Constants.expoConfig?.extra || {}) as { apiBase?: string }).apiBase);
 
 function PwField({
   label, value, onChangeText, show, onToggle, autoComplete, textContentType, hint, onSubmit,
@@ -95,7 +94,8 @@ function LinkBtn({ label, onPress, bold }: { label: string; onPress: () => void;
 function RecoveryPanel({ code, intro, cta, onDone }: { code: string; intro: string; cta: string; onDone: () => void }) {
   const [shared, setShared] = useState(false);
   const share = async () => {
-    try { await Share.share({ message: `Dashin & Flexin recovery code: ${code}` }); setShared(true); } catch { /* cancelled */ }
+    const r = await shareText(`Dashin & Flexin recovery code: ${code}`);
+    if (r !== 'failed') setShared(true);
   };
   return (
     <View>
@@ -110,7 +110,7 @@ function RecoveryPanel({ code, intro, cta, onDone }: { code: string; intro: stri
         Screenshot it or send it to your notes. It will not be shown again. Each time you use it, you get a new one.
       </Text>
       <View style={{ marginTop: 16, gap: 10 }}>
-        <Btn block label={shared ? 'Shared. Share again' : 'Save / share code'} onPress={share} />
+        <Btn block label={shared ? 'Saved. Share again' : 'Save / share code'} onPress={share} />
         <Btn kind="gold" block label={cta} onPress={onDone} />
       </View>
     </View>

@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Share, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+import { downloadTextFile, shareText } from '../../lib/share';
 import { Actions, Btn, Card, Empty, H2, Mut, Note, Picker, Row, Screen, Seg, Tag, TableRow, Field, Two, useArm } from '../../components/ui';
 import {
   EXP_CATS, ExpFilter, PLATS, PLAT_NAME, buildCsv, c2, doneBlocks, expPlat, expensesFor, expensesOf, fmtDate, fmtTime, filterExpenses, money, money0,
@@ -235,7 +236,11 @@ function Export({ year, setYear }: { year: number; setYear: (y: number) => void 
   const { entries, settings, who, flash } = useStore();
   const csv = () => buildCsv(entries, year, who, settings.rate);
   const share = async () => {
-    try { await Share.share({ title: `Dashin & Flexin ${year}.csv`, message: csv() }); } catch { flash("Couldn't open the share sheet."); }
+    const name = `Dashin & Flexin ${year}.csv`;
+    if (downloadTextFile(name, csv())) { flash('CSV saved to your downloads'); return; }
+    const r = await shareText(csv(), name);
+    if (r === 'copied') flash('CSV copied. Paste it into Notes or Sheets.');
+    else if (r === 'failed') flash("Couldn't open the share sheet.");
   };
   return (
     <Card>

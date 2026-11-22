@@ -2,6 +2,8 @@ import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Linking, Switch, Text } from 'react-native';
+import { NOTIFS_SUPPORTED } from '../lib/reminders';
+import { siteOrigin } from '../lib/api';
 import { Actions, Btn, Field, H2, Mut, Note, Row, SheetScreen, useArm } from '../components/ui';
 import { cleanNum } from '../lib/calc';
 import { useStore } from '../lib/store';
@@ -23,7 +25,7 @@ export default function Settings() {
   const [delErr, setDelErr] = useState('');
   const [delBusy, setDelBusy] = useState(false);
   const { armed, tap } = useArm(4000);
-  const site = ((Constants.expoConfig?.extra || {}) as { apiBase?: string }).apiBase || 'https://dashin-flexin-api.vercel.app';
+  const site = siteOrigin(((Constants.expoConfig?.extra || {}) as { apiBase?: string }).apiBase);
 
   const save = async () => {
     const patch = { goal: cleanNum(goal), setAside: Math.min(60, cleanNum(setAside)), station: station.trim(), rate: rate.trim() === '' ? '' : String(cleanNum(rate)) };
@@ -72,11 +74,17 @@ export default function Settings() {
         <Btn label="Cancel" onPress={() => router.back()} />
       </Actions>
       <H2>Reminders</H2>
-      <Row>
-        <Text style={{ color: C.text, fontWeight: '700', flex: 1 }}>Block reminders</Text>
-        <Switch value={reminders} onValueChange={toggleReminders} trackColor={{ false: '#3a3a44', true: C.goldLine }} thumbColor={reminders ? C.gold : '#9a978f'} accessibilityLabel="Block reminders" />
-      </Row>
-      <Note>A heads-up 1 hour before each upcoming block, when it starts, and when it ends so you can log your results.</Note>
+      {NOTIFS_SUPPORTED ? (
+        <>
+          <Row>
+            <Text style={{ color: C.text, fontWeight: '700', flex: 1 }}>Block reminders</Text>
+            <Switch value={reminders} onValueChange={toggleReminders} trackColor={{ false: '#3a3a44', true: C.goldLine }} thumbColor={reminders ? C.gold : '#9a978f'} accessibilityLabel="Block reminders" />
+          </Row>
+          <Note>A heads-up 1 hour before each upcoming block, when it starts, and when it ends so you can log your results.</Note>
+        </>
+      ) : (
+        <Note>Block reminders need the phone app. This web version can't send them, so set your own phone alarm for blocks.</Note>
+      )}
       <H2>Account</H2>
       <Mut>{me?.email || ''}</Mut>
       {!openPw ? (

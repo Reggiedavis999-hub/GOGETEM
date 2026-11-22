@@ -51,6 +51,11 @@
         "projectId": "a940736f-5a50-44ea-a45b-46b7fb614868"
       }
     },
-    "owner": "fullygogetems-team"
+    "owner": "fullygogetems-team",
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    }
   }
 }

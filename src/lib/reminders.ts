@@ -5,6 +5,8 @@ import type { Block, Entry } from './types';
 
 export const REMIND_KEY = 'df_reminders_v1';
 export const ASKED_KEY = 'df_notif_asked_v1';
+/** Phone reminders are local notifications, which the iPhone web version can't send. */
+export const NOTIFS_SUPPORTED = Platform.OS !== 'web';
 const CHANNEL = 'block-reminders';
 const MAX_BLOCKS = 20; // iPhone allows 64 pending local notifications; 3 per block
 
@@ -12,7 +14,7 @@ let inited = false;
 
 /** Notification handler + Android channel. Safe to call more than once. */
 export async function initNotifications(): Promise<void> {
-  if (inited) return;
+  if (inited || !NOTIFS_SUPPORTED) return;
   inited = true;
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -33,6 +35,7 @@ export async function initNotifications(): Promise<void> {
 }
 
 export async function permissionGranted(): Promise<boolean> {
+  if (!NOTIFS_SUPPORTED) return false;
   try {
     const p = await Notifications.getPermissionsAsync();
     return !!p.granted || p.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
@@ -41,6 +44,7 @@ export async function permissionGranted(): Promise<boolean> {
 
 /** Shows the system prompt if needed. On Android 13+ the channel must exist first. */
 export async function askPermission(): Promise<boolean> {
+  if (!NOTIFS_SUPPORTED) return false;
   try {
     await initNotifications();
     if (await permissionGranted()) return true;
@@ -50,6 +54,7 @@ export async function askPermission(): Promise<boolean> {
 }
 
 async function run(entries: Entry[], enabled: boolean): Promise<void> {
+  if (!NOTIFS_SUPPORTED) return;
   try {
     await initNotifications();
     await Notifications.cancelAllScheduledNotificationsAsync();
