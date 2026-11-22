@@ -1,10 +1,10 @@
 import { router, Tabs } from 'expo-router';
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { ColorValue, Pressable, Text, View } from 'react-native';
 import { useStore } from '../../lib/store';
 import { C } from '../../lib/theme';
 
-const icon = (glyph: string) => ({ color }: { color: string }) => <Text style={{ fontSize: 20, color }}>{glyph}</Text>;
+const icon = (glyph: string) => ({ color }: { color: ColorValue }) => <Text style={{ fontSize: 20, color }}>{glyph}</Text>;
 
 function HeaderRight() {
   const { online } = useStore();
