@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Dashin & Flexin",
-    "slug": "dashin-and-flexin",
+    "slug": "gogetem-32xgtafm3p2xy8yzii9tt",
     "scheme": "dashinflexin",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -18,7 +18,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.rhondasons.dashinandflexin",
       "buildNumber": "1",
-      "infoPlist": { "ITSAppUsesNonExemptEncryption": false }
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.rhondasons.dashinandflexin",
@@ -28,8 +30,18 @@
         "backgroundColor": "#0b0b0d"
       }
     },
-    "plugins": ["expo-router"],
-    "experiments": { "reactCompiler": true },
-    "extra": { "apiBase": "https://gogetem-flex-hq.vercel.app" }
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "reactCompiler": true
+    },
+    "extra": {
+      "apiBase": "https://gogetem-flex-hq.vercel.app",
+      "eas": {
+        "projectId": "a940736f-5a50-44ea-a45b-46b7fb614868"
+      }
+    },
+    "owner": "fullygogetems-team"
   }
 }
