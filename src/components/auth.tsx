@@ -190,8 +190,8 @@ export function AuthScreen() {
       <ImageBackground source={COVER} resizeMode="cover" style={StyleSheet.absoluteFill} accessible={false} />
       <LinearGradient
         pointerEvents="none"
-        colors={['rgba(11,11,13,0)', 'rgba(11,11,13,0.72)', 'rgba(11,11,13,0.96)', C.bg]}
-        locations={[0, 0.42, 0.62, 0.8]}
+        colors={['rgba(11,11,13,0)', 'rgba(11,11,13,0)', 'rgba(11,11,13,0.78)', 'rgba(11,11,13,0.95)', C.bg]}
+        locations={[0, 0.3, 0.5, 0.66, 0.82]}
         style={StyleSheet.absoluteFill}
       />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
