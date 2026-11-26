@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
+import { ListenCard, Logo } from '../../components/brand';
 import { BlockRow, DropButton, LiveCard, LiveStartCard } from '../../components/blocks';
 import { Alert, Bar, Btn, Card, H2, Mut, Row, Screen, Stat, StatRow } from '../../components/ui';
 import {
@@ -32,6 +33,7 @@ export default function Home() {
 
   return (
     <Screen>
+      <Logo />
       <Text style={{ color: C.text, fontSize: 22, fontWeight: '800', marginTop: 4, marginHorizontal: 2 }}>What it is, {who(me?.id)}.</Text>
       <Mut style={{ marginHorizontal: 2, marginBottom: 12 }}>{now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Mut>
       <LiveCard />
@@ -85,6 +87,7 @@ export default function Home() {
       ) : (
         <Card><Text style={{ color: C.mute, textAlign: 'center', paddingVertical: 18 }}>Nothing scheduled.{'\n'}Tap + and choose Upcoming play I grabbed.</Text></Card>
       )}
+      <ListenCard />
     </Screen>
   );
 }
