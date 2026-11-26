@@ -35,7 +35,7 @@ export default function TabsLayout() {
         tabBarStyle: { backgroundColor: '#0f0f12', borderTopColor: C.line, height: 66, paddingTop: 4 },
         tabBarActiveTintColor: C.gold,
         tabBarInactiveTintColor: C.mute,
-        tabBarLabelStyle: { fontSize: 12, fontWeight: '700' },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
         sceneStyle: { backgroundColor: C.bg },
       }}
     >
@@ -54,6 +54,7 @@ export default function TabsLayout() {
         }}
         listeners={{ tabPress: (e) => { e.preventDefault(); router.push('/add'); } }}
       />
+      <Tabs.Screen name="chat" options={{ title: 'Chat', tabBarIcon: icon('💬') }} />
       <Tabs.Screen name="assist" options={{ title: STORE_BUILD ? "Go Get 'Em" : 'Go Get', tabBarIcon: icon('🤖') }} />
       <Tabs.Screen name="drops" options={{ title: 'Drops', tabBarIcon: icon('⚡') }} />
       <Tabs.Screen name="money" options={{ title: 'Money', tabBarIcon: icon('💰') }} />

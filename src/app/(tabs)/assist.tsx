@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import React from 'react';
 import { Linking, Text, View } from 'react-native';
-import { GoChat } from '../../components/gochat';
 import { Actions, Btn, Card, Empty, H2, Mut, Note, Row, Screen, Tag } from '../../components/ui';
 import { fmtDate, money, PLAT_NAME, normPlat } from '../../lib/calc';
 import { ASSISTANT_NAME } from '../../lib/flavor';
@@ -21,8 +20,6 @@ export default function AssistTab() {
 
   return (
     <Screen>
-      <GoChat enabled={assistant} />
-
       <Card style={{ borderColor: C.goldLine }}>
         <Row>
           <Text style={{ color: C.gold, fontSize: 20, fontWeight: '800', flex: 1 }}>{ASSISTANT_NAME}</Text>
