@@ -1,3 +1,4 @@
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -66,4 +67,17 @@ export async function pickFile(): Promise<Picked | null> {
   if (mime === 'application/pdf' || /\.pdf$/i.test(name)) return { name, mime: 'application/pdf', data };
   if (mime.startsWith('image/')) return { name, mime, data };
   throw new PickError('Only photos, PDFs and text files work here.');
+}
+
+/** Picks a square photo and shrinks it to a small JPEG for a profile picture. Returns base64, or null on cancel. */
+export async function pickAvatar(): Promise<string | null> {
+  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!perm.granted && perm.canAskAgain === false) throw new PickError('Allow photo access in your phone settings to set a picture.');
+  const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+  if (r.canceled || !r.assets?.length) return null;
+  const ref = ImageManipulator.manipulate(r.assets[0].uri).resize({ width: 160 });
+  const img = await ref.renderAsync();
+  const out = await img.saveAsync({ compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true });
+  if (!out.base64 || out.base64.length > 85000) throw new PickError('That picture could not be shrunk enough. Try another.');
+  return out.base64;
 }
