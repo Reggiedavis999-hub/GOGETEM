@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { api, ApiError, hasToken, LoadResp, loadToken, MeResp, setApiBase, setToken, siteOrigin, writeCount, writesInFlight } from './api';
-import { DEFAULT_SETTINGS, newId } from './calc';
+import { DEFAULT_SETTINGS, migrateLive, newId } from './calc';
 import { askPermission, ASKED_KEY, NOTIFS_SUPPORTED, REMIND_KEY, syncReminders } from './reminders';
 import type { Entry, LiveDash, Platform, Settings, User } from './types';
 
@@ -22,6 +22,8 @@ interface Store {
   reminders: boolean;
   setReminders: (on: boolean) => Promise<boolean>;
   emailReset: boolean;
+  /** True when the server has the notes assistant switched on */
+  assistant: boolean;
   bootError: string;
   live: LiveDash | null;
   lastPlat: Platform;
@@ -63,6 +65,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [users, setUsers] = useState<Record<string, User>>({});
   const [online, setOnline] = useState(true);
   const [emailReset, setEmailReset] = useState(false);
+  const [assistant, setAssistant] = useState(false);
   const [reminders, setRemindersState] = useState(true);
   const [permVer, setPermVer] = useState(0);
   const [bootError, setBootError] = useState('');
@@ -117,6 +120,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const j = await api<MeResp>('me');
       setOnline(true);
       setEmailReset(!!j.emailReset);
+      setAssistant(!!j.assistant);
       if (!j.me) {
         if (hasToken()) await wipeLocal();
         setMe(null);
@@ -158,8 +162,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         AsyncStorage.removeItem(OLD_CACHE_KEY).catch(() => {});
         const l = await AsyncStorage.getItem(LIVE_KEY);
         if (l) {
-          const p = JSON.parse(l) as LiveDash;
-          if (p && p.start && Array.isArray(p.deliveries)) setLiveState(p);
+          const p = migrateLive(JSON.parse(l));
+          if (p) setLiveState(p);
         }
         const rm = await AsyncStorage.getItem(REMIND_KEY);
         if (rm === 'off') setRemindersState(false);
@@ -322,10 +326,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const who = useCallback((id?: string) => (id && users[id] ? users[id].name : 'Someone'), [users]);
 
   const value = useMemo<Store>(() => ({
-    ready, me, entries, settings, users, online, reminders, setReminders, emailReset, bootError, live, lastPlat, who,
+    ready, me, entries, settings, users, online, reminders, setReminders, emailReset, assistant, bootError, live, lastPlat, who,
     refresh, boot, login, signup, completeSignup, forgotPassword, resetPassword, changePassword, deleteAccount, logout,
     saveEntry, removeEntry, removeMany, saveSettings, setLive, setLastPlat, flash, toast,
-  }), [ready, me, entries, settings, users, online, reminders, setReminders, emailReset, bootError, live, lastPlat, who,
+  }), [ready, me, entries, settings, users, online, reminders, setReminders, emailReset, assistant, bootError, live, lastPlat, who,
     refresh, boot, login, signup, completeSignup, forgotPassword, resetPassword, changePassword, deleteAccount, logout,
     saveEntry, removeEntry, removeMany, saveSettings, setLive, setLastPlat, flash, toast]);
 

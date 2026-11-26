@@ -21,6 +21,8 @@ export interface Block extends Base {
   orders: number;
   station: string;
   note: string;
+  /** Play-by-play detail for a live dash. Totals above (hours, pay, tips, miles, orders) are always derived from it. */
+  dash?: DashDetail;
 }
 
 export interface Drop extends Base {
@@ -57,6 +59,27 @@ export interface User {
   email?: string;
 }
 
+/** One order (or a stack of orders) on a dash. Open while end is undefined. */
+export interface Play {
+  id: string;
+  start: number;
+  end?: number;
+  /** DoorDash base rate in effect for this play, $/hr */
+  rate: number;
+  /** 1 for a single order, 2+ for a stack */
+  deliveries: number;
+  /** What the play paid in total, tips included. Set at Play made. */
+  total: number;
+}
+
+export interface DashDetail {
+  start: number;
+  end: number;
+  pausedMs: number;
+  plays: Play[];
+}
+
+/** Old live dash shape (one entry per delivery). Only read when upgrading a dash that was running before the update. */
 export interface LiveDelivery {
   ts: number;
   pay: number;
@@ -69,8 +92,12 @@ export interface LiveDash {
   start: number;
   paused: number;
   pausedMs: number;
+  /** Last base rate used, prefilled on the next Play */
   rate?: number;
-  deliveries: LiveDelivery[];
+  plays: Play[];
+  /** Carried over from a dash started on the old version */
+  miles?: number;
+  tips?: number;
 }
 
 export interface Problems {

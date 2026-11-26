@@ -1,14 +1,16 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { Text } from 'react-native';
-import { Actions, Btn, Field, Picker, SheetScreen, Two } from '../components/ui';
+import { AssistPanel } from '../components/assist';
+import { Actions, Btn, Field, Note, Picker, SheetScreen, Two } from '../components/ui';
 import {
   PLAT_NAME, c2, cleanNum, splitPay, fmtDate, fmtTime, isPerHr, minT, money, newId, normPlat, num, overlapWith, parseDateInput, parseHours, parseLocal, parsePay,
   parseTimeInput, tmin, todayStr,
 } from '../lib/calc';
+import type { ExpDraft } from '../lib/calc';
 import { useStore } from '../lib/store';
 import { C } from '../lib/theme';
-import type { Block, BlockStatus, Platform } from '../lib/types';
+import type { Block, BlockStatus, Expense, Platform } from '../lib/types';
 
 const p1 = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) || '';
 
@@ -44,6 +46,7 @@ export default function BlockForm() {
   const [station, setStation] = useState(existing ? existing.station : settings.station || '');
   const [note, setNote] = useState(existing?.note || p1(params.note) || '');
   const [busy, setBusy] = useState(false);
+  const [expenses, setExpenses] = useState<ExpDraft[]>([]);
   const ack = useRef('');
 
   const startHM = parseTimeInput(start);
@@ -105,7 +108,17 @@ export default function BlockForm() {
       station: station.trim(), note: note.trim(),
       who: existing?.who || me?.id || '', created: existing?.created || Date.now(),
     };
+    if (existing?.dash) {
+      const same = c2(existing.hours) === c2(e.hours) && c2(existing.pay) === c2(e.pay) && c2(existing.tips) === c2(e.tips) && c2(existing.miles) === c2(e.miles) && existing.orders === e.orders;
+      if (!same) delete e.dash; // numbers were changed by hand, so the play detail no longer matches
+    }
     const saved = await saveEntry(e);
+    if (saved && expenses.length && st === 'done') {
+      for (const x of expenses) {
+        const ex: Expense = { id: newId(), type: 'expense', platform: plat, date: dateS, amt: x.amt, cat: x.cat, note: x.note, who: me?.id || '' };
+        await saveEntry(ex);
+      }
+    }
     setBusy(false);
     if (saved) {
       if (isLive) setLive(null);
@@ -124,6 +137,12 @@ export default function BlockForm() {
 
   return (
     <SheetScreen title={existing ? 'Edit block' : status === 'planned' ? 'Upcoming block' : 'Completed block'}>
+      {!!existing?.dash && (
+        <>
+          <Note>This dash has plays. Change the play details, times, rates and totals in the dash editor. If you change the hours, pay, tips, miles or orders here by hand, the play detail is dropped.</Note>
+          <Btn kind="gold" label="Edit dash & plays" onPress={() => router.replace({ pathname: '/dashedit', params: { id: existing.id } })} />
+        </>
+      )}
       <Picker<BlockStatus> label="Status" value={status} onChange={setStatus} options={[{ k: 'planned', label: 'Upcoming' }, { k: 'done', label: 'Completed' }, { k: 'cancelled', label: 'Cancelled' }]} />
       <Picker<Platform> label="Platform" value={plat} onChange={setPlat} options={[{ k: 'flex', label: 'Amazon Flex' }, { k: 'doordash', label: 'DoorDash' }, { k: 'ubereats', label: 'Uber Eats' }]} />
       <Two>
@@ -151,7 +170,16 @@ export default function BlockForm() {
         </>
       )}
       <Field label="Station / zone / area" value={station} onChangeText={setStation} autoCorrect={false} />
-      <Field label="Note" value={note} onChangeText={setNote} multiline />
+      <Field label="Note" value={note} onChangeText={setNote} multiline maxLength={300} />
+      {showDone && (
+        <AssistPanel
+          note={note}
+          state={{ miles: cleanNum(miles), tips: tipNum, total: totalNum, plays: [], expenses }}
+          context={{ platform: plat, kind: plat === 'flex' ? 'Amazon Flex block' : 'block', date, hours: hv, orders: Math.round(cleanNum(orders)) }}
+          onApply={(n) => { setMiles(n.miles ? String(n.miles) : ''); setTips(n.tips ? String(n.tips) : ''); setPay(n.total ? String(n.total) : ''); setExpenses(n.expenses); }}
+        />
+      )}
+      {showDone && expenses.length > 0 && <Text style={{ color: C.text, fontSize: 13, marginTop: 10 }}>Expenses that will be added: {expenses.map((x) => `${x.cat} ${money(x.amt)}`).join(', ')}</Text>}
       <Actions>
         <Btn kind="gold" label={busy ? 'Saving...' : 'Save'} onPress={save} disabled={busy} />
         <Btn label="Cancel" onPress={() => router.back()} />

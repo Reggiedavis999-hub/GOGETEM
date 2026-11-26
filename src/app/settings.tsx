@@ -10,7 +10,7 @@ import { useStore } from '../lib/store';
 import { C } from '../lib/theme';
 
 export default function Settings() {
-  const { me, settings, saveSettings, logout, changePassword, deleteAccount, reminders, setReminders, flash } = useStore();
+  const { me, settings, saveSettings, logout, changePassword, deleteAccount, reminders, setReminders, assistant, flash } = useStore();
   const [goal, setGoal] = useState(settings.goal ? String(settings.goal) : '');
   const [setAside, setSetAside] = useState(String(settings.setAside ?? 25));
   const [station, setStation] = useState(settings.station || '');
@@ -108,6 +108,7 @@ export default function Settings() {
       <Actions>
         <Btn sm label="Privacy Policy" onPress={() => Linking.openURL(`${site}/privacy.html`).catch(() => {})} />
         <Btn sm label="Terms" onPress={() => Linking.openURL(`${site}/terms.html`).catch(() => {})} />
+        {assistant && <Btn sm label="AI assistant notice" onPress={() => Linking.openURL(`${site}/ai.html`).catch(() => {})} />}
       </Actions>
       <H2>Delete account</H2>
       <Mut>This permanently deletes your account and every block, drop and expense in it. It cannot be undone.</Mut>

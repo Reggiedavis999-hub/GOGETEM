@@ -9,8 +9,8 @@ export default function Add() {
   const { live, setLive, flash } = useStore();
   const go = (pathname: string, params?: Record<string, string>) => { router.back(); setTimeout(() => router.push({ pathname: pathname as '/block', params }), 60); };
   const start = (plat: 'doordash' | 'ubereats') => {
-    setLive({ plat, start: Date.now(), paused: 0, pausedMs: 0, deliveries: [] });
-    flash('Dash started. Timer is running.');
+    setLive({ plat, start: Date.now(), paused: 0, pausedMs: 0, plays: [] });
+    flash('You are live. Hit Play when an order comes in.');
     router.back();
     setTimeout(() => router.navigate('/'), 60);
   };

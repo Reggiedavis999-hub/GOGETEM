@@ -1,5 +1,5 @@
 import type {
-  Block, BlockSum, Drop, Entry, ExpPlatform, ExpSum, Expense, LiveDash, Platform, Problems, Settings,
+  Block, BlockSum, DashDetail, Drop, Entry, ExpPlatform, ExpSum, Expense, LiveDash, LiveDelivery, Platform, Play, Problems, Settings,
 } from './types';
 
 /* ---------- constants ---------- */
@@ -247,16 +247,194 @@ export function rateText(e: Block): string {
   return t;
 }
 
-/* ---------- live dash ---------- */
-export function liveSum(L: LiveDash, now = Date.now()) {
-  const r = { n: L.deliveries.length, pay: 0, tips: 0, miles: 0, gross: 0, ms: 0, hours: 0, base: 0, perHr: 0 };
-  L.deliveries.forEach((d) => { r.pay += d.pay || 0; r.tips += d.tip || 0; r.miles += d.mi || 0; });
-  r.pay = c2(r.pay); r.tips = c2(r.tips); r.miles = c2(r.miles); r.gross = c2(r.pay + r.tips);
-  r.ms = Math.max(0, (L.paused || now) - L.start - (L.pausedMs || 0));
-  r.hours = r.ms / 3600000;
-  r.base = c2((L.rate || 0) * r.hours);
-  r.perHr = r.ms >= 300000 ? r.gross / r.hours : 0;
-  return r;
+/* ---------- live dash: plays ---------- */
+const HR = 3600000;
+
+export const playMs = (p: Play, now: number) => Math.max(0, (p.end ?? now) - p.start);
+
+export interface DashStats {
+  plays: number;
+  /** plays that have a Play made total */
+  done: number;
+  deliveries: number;
+  /** sum of every finished play's total (tips are inside) */
+  total: number;
+  /** what the base rates say the plays should have paid: rate x that play's active time */
+  base: number;
+  /** total minus base: promos, peak pay and tips on top of the base rates */
+  above: number;
+  dashMs: number;
+  activeMs: number;
+  deadMs: number;
+  /** total over the whole dash clock */
+  perHrDash: number;
+  /** total over time spent on finished plays only */
+  perHrActive: number;
+  perPlay: number;
+  /** dollars per mile, 0 when no miles */
+  perMile: number;
+}
+
+/** Everything the home card, the End dash sheet, the editor and the schedule show comes from this one function. */
+export function dashStats(plays: Play[], dashMs: number, miles = 0, now = Date.now()): DashStats {
+  let total = 0, base = 0, active = 0, doneMs = 0, doneN = 0, dels = 0;
+  plays.forEach((p) => {
+    const ms = playMs(p, now);
+    active += ms;
+    base += (p.rate || 0) * (ms / HR);
+    dels += p.deliveries || 0;
+    if (p.end !== undefined) { total += p.total || 0; doneMs += ms; doneN++; }
+  });
+  total = c2(total); base = c2(base);
+  const dm = Math.max(0, dashMs);
+  return {
+    plays: plays.length, done: doneN, deliveries: dels, total, base, above: c2(total - base),
+    dashMs: dm, activeMs: active, deadMs: Math.max(0, dm - active),
+    perHrDash: dm >= 300000 ? total / (dm / HR) : 0,
+    perHrActive: doneMs >= 60000 ? total / (doneMs / HR) : 0,
+    perPlay: doneN > 0 ? total / doneN : 0,
+    perMile: miles > 0 ? total / miles : 0,
+  };
+}
+
+/** Dash clock: from Live dash to now (or to the pause), minus paused time. */
+export const liveDashMs = (L: LiveDash, now = Date.now()) => Math.max(0, (L.paused || now) - L.start - (L.pausedMs || 0));
+export const openPlay = (L: LiveDash): Play | undefined => L.plays.find((p) => p.end === undefined);
+export const liveStats = (L: LiveDash, now = Date.now()) => dashStats(L.plays, liveDashMs(L, now), 0, now);
+
+/** Upgrades a live dash saved by the old version (one row per delivery) to plays. Returns null if it is not a live dash. */
+export function migrateLive(raw: unknown): LiveDash | null {
+  const r = raw as (Partial<LiveDash> & { deliveries?: LiveDelivery[]; rate?: number }) | null;
+  if (!r || typeof r !== 'object' || !r.start || (r.plat !== 'doordash' && r.plat !== 'ubereats' && r.plat !== 'flex')) return null;
+  if (Array.isArray(r.plays)) return { ...(r as LiveDash), paused: r.paused || 0, pausedMs: r.pausedMs || 0 };
+  if (!Array.isArray(r.deliveries)) return null;
+  let mi = 0, tips = 0;
+  const plays: Play[] = r.deliveries.map((d, i) => {
+    mi += d.mi || 0; tips += d.tip || 0;
+    return { id: 'old' + i, start: d.ts, end: d.ts, rate: r.rate || 0, deliveries: 1, total: c2((d.pay || 0) + (d.tip || 0)) };
+  });
+  return { plat: r.plat, start: r.start, paused: r.paused || 0, pausedMs: r.pausedMs || 0, rate: r.rate, plays, miles: c2(mi) || undefined, tips: c2(tips) || undefined };
+}
+
+export interface DashFields { date: string; start: string; hours: number; pay: number; tips: number; miles: number; orders: number }
+
+/** The saved block's numbers, always derived from the plays: total = sum of play totals, tips are inside it. */
+export function dashFields(d: DashDetail, tips: number, miles: number): DashFields {
+  const ms = Math.max(0, d.end - d.start - (d.pausedMs || 0));
+  let total = 0, orders = 0;
+  d.plays.forEach((p) => { total += p.total || 0; orders += p.deliveries || 0; });
+  total = c2(total);
+  const t = Math.min(c2(Math.max(0, tips)), total);
+  const st = new Date(d.start);
+  return {
+    date: ymd(st), start: pad(st.getHours()) + ':' + pad(st.getMinutes()),
+    hours: Math.max(0.02, c2(ms / HR)), pay: c2(total - t), tips: t, miles: c2(Math.max(0, miles)), orders,
+  };
+}
+
+/** A clock time on a date, moved forward past midnight if it would land before notBefore. */
+export function msFromHM(date: string, hm: string, notBefore: number): number {
+  let t = parseLocal(date, hm).getTime();
+  while (t < notBefore - 60000) t += 86400000;
+  return t;
+}
+
+export interface DashRow { id: string; rate: number; deliveries: number; startHM: string; endHM: string; total: number }
+export interface DashInput { date: string; startHM: string; endHM: string; pausedMs: number; tips: number; miles: number; rows: DashRow[] }
+
+/** Turns what the editor holds into a saved dash. Checks times, overlaps and tips. */
+export function buildDash(i: DashInput): { ok: true; dash: DashDetail; fields: DashFields } | { ok: false; error: string } {
+  const sh = parseTimeInput(i.startHM), eh = parseTimeInput(i.endHM);
+  if (!sh || !eh) return { ok: false, error: 'Add a start and end time for the dash, like 5:41 PM.' };
+  const ds = parseLocal(i.date, sh).getTime();
+  const de = msFromHM(i.date, eh, ds + 1);
+  if (de - ds - (i.pausedMs || 0) < 60000) return { ok: false, error: 'The dash needs to be at least a minute long.' };
+  if (de - ds > 20 * HR) return { ok: false, error: 'That dash is over 20 hours. Check the start and end times.' };
+  const plays: Play[] = [];
+  for (let k = 0; k < i.rows.length; k++) {
+    const r = i.rows[k];
+    const a = parseTimeInput(r.startHM), b = parseTimeInput(r.endHM);
+    if (!a || !b) return { ok: false, error: `Play ${k + 1} needs a start and end time.` };
+    const ps = msFromHM(i.date, a, ds);
+    const pe = msFromHM(i.date, b, ps + 1);
+    if (pe < ps) return { ok: false, error: `Play ${k + 1} ends before it starts.` };
+    if (ps < ds - 60000 || pe > de + 60000) return { ok: false, error: `Play ${k + 1} runs outside the dash time. Check its times.` };
+    if (!(r.deliveries >= 1)) return { ok: false, error: `Play ${k + 1} needs at least 1 delivery.` };
+    plays.push({ id: r.id, start: ps, end: pe, rate: Math.max(0, r.rate || 0), deliveries: Math.round(r.deliveries), total: c2(Math.max(0, r.total || 0)) });
+  }
+  plays.sort((x, y) => x.start - y.start);
+  for (let k = 1; k < plays.length; k++) {
+    if (plays[k].start < (plays[k - 1].end as number) - 1000) return { ok: false, error: `Two plays overlap around ${fmtStamp(plays[k].start)}. Fix the times.` };
+  }
+  const dash: DashDetail = { start: ds, end: de, pausedMs: i.pausedMs || 0, plays };
+  const f = dashFields(dash, i.tips, i.miles);
+  if (c2(i.tips) > c2(f.pay + f.tips) + 0.004) return { ok: false, error: 'Tips are more than the total. The total already includes the tips.' };
+  return { ok: true, dash, fields: f };
+}
+
+/** A plain block (no play detail) shown as one play, so an old dash can be broken into plays. */
+export function dashFromBlock(b: Block): DashDetail {
+  const st = parseLocal(b.date, b.start).getTime();
+  const en = st + Math.max(0.02, +b.hours || 0) * HR;
+  return { start: st, end: en, pausedMs: 0, plays: [{ id: newId(), start: st, end: en, rate: 0, deliveries: Math.max(1, Math.round(+b.orders || 1)), total: c2((+b.pay || 0) + (+b.tips || 0)) }] };
+}
+
+/* ---------- notes assistant: applying what it proposes ---------- */
+export type AssistKind = 'add_miles' | 'set_miles' | 'add_total' | 'add_expense' | 'play_total';
+export interface AssistChange { kind: AssistKind; value: number; tip?: boolean; play?: number; cat?: string; note?: string }
+export interface ExpDraft { amt: number; cat: string; note: string }
+export interface AssistState { miles: number; tips: number; total: number; plays: Play[]; expenses: ExpDraft[] }
+
+export const assistTotal = (s: AssistState) => (s.plays.length ? c2(s.plays.reduce((a, p) => a + (p.total || 0), 0)) : c2(s.total));
+
+/**
+ * The model only reads the note and names the numbers. This does the adding and subtracting, so the math cannot drift.
+ * Refuses anything that would push money or miles below zero or tips above the total.
+ */
+export function applyAssist(s: AssistState, changes: AssistChange[]): { next: AssistState; lines: string[]; errors: string[] } {
+  const next: AssistState = { miles: s.miles, tips: s.tips, total: s.total, plays: s.plays.map((p) => ({ ...p })), expenses: s.expenses.slice() };
+  const lines: string[] = [], errors: string[] = [];
+  const sgn = (v: number) => (v >= 0 ? '+' : '-');
+  for (const ch of changes) {
+    const v = Number(ch.value);
+    if (!isFinite(v)) { errors.push('One change had no number, so it was skipped.'); continue; }
+    if (ch.kind === 'add_miles' || ch.kind === 'set_miles') {
+      const to = c2(ch.kind === 'add_miles' ? next.miles + v : v);
+      if (to < 0) { errors.push('Miles would go below zero, so that change was skipped.'); continue; }
+      lines.push(`Miles ${num(next.miles, 1)} → ${num(to, 1)}${ch.kind === 'add_miles' ? ` (${sgn(v)}${num(Math.abs(v), 1)})` : ''}`);
+      next.miles = to;
+    } else if (ch.kind === 'add_total' || ch.kind === 'play_total') {
+      const before = assistTotal(next);
+      if (ch.kind === 'play_total') {
+        const idx = Math.round(Number(ch.play)) - 1;
+        const p = next.plays[idx];
+        if (!p) { errors.push(`There is no play ${ch.play}, so that change was skipped.`); continue; }
+        const to = c2(p.total + v);
+        if (to < 0) { errors.push(`Play ${idx + 1} would go below zero, so that change was skipped.`); continue; }
+        p.total = to;
+      } else if (next.plays.length) {
+        const p = next.plays[next.plays.length - 1];
+        const to = c2(p.total + v);
+        if (to < 0) { errors.push('The total would go below zero, so that change was skipped.'); continue; }
+        p.total = to;
+      } else {
+        const to = c2(next.total + v);
+        if (to < 0) { errors.push('The total would go below zero, so that change was skipped.'); continue; }
+        next.total = to;
+      }
+      if (ch.tip && ch.kind === 'add_total') next.tips = c2(Math.max(0, next.tips + v));
+      const after = assistTotal(next);
+      if (next.tips > after + 0.004) next.tips = after;
+      lines.push(`Total ${money(before)} → ${money(after)} (${sgn(v)}${money(Math.abs(v))}${ch.kind === 'play_total' ? `, play ${ch.play}` : ''}${ch.tip ? ', tip' : ''})`);
+    } else if (ch.kind === 'add_expense') {
+      if (v <= 0) { errors.push('An expense had no amount, so it was skipped.'); continue; }
+      const cat = EXP_CATS.includes(String(ch.cat)) ? String(ch.cat) : 'Other';
+      next.expenses.push({ amt: c2(v), cat, note: String(ch.note || '').slice(0, 120) });
+      lines.push(`Expense ${cat} ${money(v)}`);
+    }
+  }
+  next.total = assistTotal(next);
+  return { next, lines, errors };
 }
 
 /* ---------- schedule problems ---------- */

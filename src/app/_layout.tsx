@@ -29,8 +29,10 @@ function Gate() {
         <Stack.Screen name="block" options={modal} />
         <Stack.Screen name="expense" options={modal} />
         <Stack.Screen name="drop" options={modal} />
-        <Stack.Screen name="delivery" options={modal} />
-        <Stack.Screen name="liverate" options={modal} />
+        <Stack.Screen name="play" options={modal} />
+        <Stack.Screen name="playmade" options={modal} />
+        <Stack.Screen name="enddash" options={modal} />
+        <Stack.Screen name="dashedit" options={modal} />
         <Stack.Screen name="settings" options={modal} />
       </Stack>
       <Toast msg={toast} />

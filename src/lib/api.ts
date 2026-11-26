@@ -8,7 +8,7 @@ export class ApiError extends Error {
   auth?: boolean;
 }
 
-export interface MeResp { me: User | null; emailReset?: boolean }
+export interface MeResp { me: User | null; emailReset?: boolean; assistant?: boolean }
 export interface LoadResp { entries: Entry[]; settings: Partial<Settings>; users: User[] }
 
 const TOKEN_KEY = 'df_token_v1';
@@ -98,3 +98,14 @@ export function api<T = Record<string, unknown>>(op: string, body?: Record<strin
 
 export const writesInFlight = () => inflight;
 export const writeCount = () => writeSeq;
+
+export interface AssistReply {
+  summary: string;
+  question: string;
+  changes: import('./calc').AssistChange[];
+}
+
+/** Asks the notes assistant to read a note. Never saves anything: the app shows the proposal and the person confirms. */
+export function askAssistant(text: string, context: Record<string, unknown>, clean: boolean): Promise<AssistReply> {
+  return apiRaw<AssistReply>('assist', { text, context, clean });
+}

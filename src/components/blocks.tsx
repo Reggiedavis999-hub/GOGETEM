@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import {
-  PLAT_NAME, clk, dayLabel, dur, endOf, fmtClock, fmtDate, fmtTime, liveSum, money, money0, normPlat, num, parseLocal, rateText, startOf,
+  PLAT_NAME, clk, dashStats, dayLabel, dur, endOf, fmtClock, fmtDate, fmtTime, liveDashMs, money, money0, normPlat, num, openPlay, parseLocal, playMs, rateText, startOf,
 } from '../lib/calc';
 import { useStore } from '../lib/store';
 import { C } from '../lib/theme';
@@ -76,11 +76,15 @@ export function BlockRow({ e, now, nextId }: { e: Block; now: Date; nextId?: str
             </Text>
           )}
           {!pl && !cx && !early && <Mut style={{ marginTop: 8 }}>{rateText(e)} · {num(e.miles, 0)} mi · {who(e.who)}</Mut>}
+          {!pl && !cx && !early && !!e.dash && <DashLines e={e} />}
           {!!e.note && <Mut style={{ marginTop: 4 }}>{e.note}</Mut>}
           <Actions>
             {pl && now >= s && <Btn sm kind="gold" label="Log results" onPress={() => router.push({ pathname: '/block', params: { id: e.id, status: 'done' } })} />}
             {(cx || early) && (
               <Btn sm kind="gold" label={cx ? 'Restore' : 'Move to Upcoming'} onPress={async () => { if (await saveEntry({ ...e, status: 'planned' })) flash('Back on your schedule'); }} />
+            )}
+ {!pl && !cx && !early && plat !== 'flex' && (
+              <Btn sm kind="gold" label={e.dash ? 'Edit dash & plays' : 'Add plays'} onPress={() => router.push({ pathname: '/dashedit', params: { id: e.id } })} />
             )}
             <Btn sm label="Edit" onPress={() => router.push({ pathname: '/block', params: { id: e.id } })} />
             {pl && <Btn sm kind="danger" label={armed === 'cx' ? 'Tap again to cancel' : 'Cancel block'} onPress={cancel} />}
@@ -88,6 +92,27 @@ export function BlockRow({ e, now, nextId }: { e: Block; now: Date; nextId?: str
           </Actions>
         </View>
       )}
+    </View>
+  );
+}
+
+function DashLines({ e }: { e: Block }) {
+  const d = e.dash;
+  if (!d) return null;
+  const r = dashStats(d.plays, d.end - d.start - (d.pausedMs || 0), +e.miles || 0);
+  return (
+    <View style={{ marginTop: 6 }}>
+      <Mut>Dash {dur(r.dashMs)} · Active {dur(r.activeMs)} · Dead {dur(r.deadMs)}</Mut>
+      <Mut>{money(r.perHrDash)}/hr dash time · {money(r.perHrActive)}/hr active{r.perMile > 0 ? ` · ${money(r.perMile)}/mi` : ''}</Mut>
+      {r.base > 0 && <Mut>Base rates {money(r.base)} · {money(Math.abs(r.above))} {r.above >= 0 ? 'above' : 'under'} base</Mut>}
+      {d.plays.map((p, i) => {
+        const ms = playMs(p, 0);
+        return (
+          <Mut key={p.id}>
+            #{i + 1} {money(p.total)}{p.rate > 0 ? ` · ${money(p.rate)}/hr base` : ''} · {p.deliveries} {p.deliveries === 1 ? 'delivery' : 'deliveries'}{ms >= 60000 ? ` · ${dur(ms)} · ${money(p.total / (ms / 3600000))}/hr` : ''}
+          </Mut>
+        );
+      })}
     </View>
   );
 }
@@ -134,56 +159,52 @@ function LiveBody({ armed, tap, flash, setLive }: { armed: string | null; tap: (
   useKeepAwake();
   const { live } = useStore();
   if (!live) return null;
-  const r = liveSum(live), pz = !!live.paused, st = new Date(live.start);
+  const now = Date.now();
+  const r = dashStats(live.plays, liveDashMs(live, now), 0, now);
+  const op = openPlay(live), pz = !!live.paused, st = new Date(live.start);
   const pause = () => {
+    if (op) { flash('Tap Play made first, then pause.'); return; }
     const l = { ...live };
     if (l.paused) { l.pausedMs = (l.pausedMs || 0) + (Date.now() - l.paused); l.paused = 0; } else l.paused = Date.now();
     setLive(l);
   };
-  const end = () => {
-    router.push({
-      pathname: '/block',
-      params: {
-        live: '1', status: 'done', platform: live.plat,
-        date: `${st.getFullYear()}-${String(st.getMonth() + 1).padStart(2, '0')}-${String(st.getDate()).padStart(2, '0')}`,
-        start: `${String(st.getHours()).padStart(2, '0')}:${String(st.getMinutes()).padStart(2, '0')}`,
-        hours: String(Math.round(r.hours * 100) / 100), pay: String(r.pay), tips: String(r.tips), miles: String(r.miles), orders: String(r.n),
-        note: `Live dash - ${r.n} deliveries${live.rate ? ` - base $${num(live.rate, 2)}/hr` : ''}`,
-      },
-    });
-  };
+  const end = () => router.push(op ? { pathname: '/playmade', params: { end: '1' } } : '/enddash');
   return (
     <Card style={{ borderColor: C.greenLine, backgroundColor: C.liveBg }}>
       <Row>
         <Tag gold label={`${pz ? 'PAUSED' : 'LIVE'} · ${PLAT_NAME[live.plat]}`} />
         <Mut>started {fmtClock(st.getHours() + st.getMinutes() / 60)}</Mut>
       </Row>
-      <Text style={{ color: C.text, fontSize: 38, fontWeight: '800', marginVertical: 8, fontVariant: ['tabular-nums'] }}>{clk(r.ms)}</Text>
+      <Text style={{ color: C.text, fontSize: 38, fontWeight: '800', marginTop: 8, fontVariant: ['tabular-nums'] }}>{clk(r.dashMs)}</Text>
+      <Mut style={{ marginBottom: 8 }}>dash time · active {dur(r.activeMs)} · dead {dur(r.deadMs)}</Mut>
       <StatRow>
-        <Stat value={money(r.gross)} label="earned" />
-        <Stat value={r.perHr > 0 ? money(r.perHr) : '--'} label="per hour w/ tips" />
-        <Stat value={String(r.n)} label="deliveries" />
+        <Stat value={money(r.total)} label="earned" />
+        <Stat value={r.perHrDash > 0 ? money(r.perHrDash) : '--'} label="per hour w/ tips" />
+        <Stat value={String(r.plays)} label={r.plays === 1 ? 'play' : 'plays'} />
       </StatRow>
-      <Mut style={{ marginVertical: 8 }}>Total {money(r.gross)} = {money(r.pay)} base + {money(r.tips)} tips · {num(r.miles, 1)} mi{r.n ? ` · ${money(r.gross / r.n)}/delivery` : ''}</Mut>
-      {!!live.rate && live.rate > 0 && (
-        <Text style={{ color: C.text, fontSize: 13, marginBottom: 8 }}>Base ${num(live.rate, 2)}/hr = <Text style={{ fontWeight: '800' }}>{money(r.base)}</Text> so far · Actual <Text style={{ fontWeight: '800' }}>{money(r.gross)}</Text></Text>
+      {r.base > 0 && (
+        <Text style={{ color: C.text, fontSize: 13, marginTop: 8 }}>Base rates say <Text style={{ fontWeight: '800' }}>{money(r.base)}</Text> so far · Actual <Text style={{ fontWeight: '800' }}>{money(r.total)}</Text></Text>
       )}
-      {live.deliveries.map((d, i) => (
-        <View key={d.ts + '-' + i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderTopWidth: 1, borderTopColor: C.line }}>
-          <View>
-            <Text style={{ color: C.text, fontWeight: '700' }}>#{i + 1} · {money((d.pay || 0) + (d.tip || 0))}</Text>
-            <Mut>Pay {money(d.pay || 0)} · Tip {money(d.tip || 0)} · {num(d.mi || 0, 1)} mi</Mut>
+      {live.plays.map((p, i) => {
+        const ms = playMs(p, now), running = p.end === undefined;
+        return (
+          <View key={p.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, marginTop: i === 0 ? 8 : 0, borderTopWidth: 1, borderTopColor: C.line }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: running ? C.green : C.text, fontWeight: '700' }}>#{i + 1} · {running ? `in progress ${clk(ms)}` : money(p.total)}</Text>
+              <Mut>{p.rate > 0 ? `${money(p.rate)}/hr base · ` : ''}{p.deliveries} {p.deliveries === 1 ? 'delivery' : 'deliveries'}{!running && ms >= 60000 ? ` · ${dur(ms)} · ${money(p.total / (ms / 3600000))}/hr` : ''}</Mut>
+            </View>
+            <Btn sm label="Edit" onPress={() => router.push({ pathname: '/play', params: { id: p.id } })} />
           </View>
-          <Btn sm label="Edit" onPress={() => router.push({ pathname: '/delivery', params: { i: String(i) } })} />
-        </View>
-      ))}
+        );
+      })}
       <View style={{ marginTop: 10 }}>
-        <Btn kind="gold" block label="+ Delivery" style={{ minHeight: 56 }} onPress={() => router.push('/delivery')} />
+        {op
+          ? <Btn kind="gold" block label="✔ Play made" style={{ minHeight: 56 }} onPress={() => router.push('/playmade')} />
+          : <Btn kind="gold" block label="▶ Play" style={{ minHeight: 56 }} onPress={() => router.push('/play')} />}
       </View>
       <Actions>
         <Btn sm label={pz ? 'Resume' : 'Pause'} onPress={pause} />
-        {r.n > 0 && <Btn sm label="Undo last" onPress={() => { setLive({ ...live, deliveries: live.deliveries.slice(0, -1) }); flash('Last delivery removed'); }} />}
-        <Btn sm label={live.rate ? 'Base rate' : 'Hourly base'} onPress={() => router.push('/liverate')} />
+        {r.plays > 0 && <Btn sm label="Undo last play" onPress={() => { setLive({ ...live, plays: live.plays.slice(0, -1) }); flash('Last play removed'); }} />}
         <Btn sm kind="gold" label="End dash" onPress={end} />
         <Btn sm kind="danger" label={armed === 'disc' ? 'Tap again to discard' : 'Discard'} onPress={() => tap('disc', () => { setLive(null); flash('Dash discarded'); })} />
       </Actions>
@@ -195,8 +216,8 @@ export function LiveStartCard() {
   const { live, setLive, flash } = useStore();
   if (live) return null;
   const start = (plat: 'doordash' | 'ubereats') => {
-    setLive({ plat, start: Date.now(), paused: 0, pausedMs: 0, deliveries: [] });
-    flash('Dash started. Timer is running.');
+    setLive({ plat, start: Date.now(), paused: 0, pausedMs: 0, plays: [] });
+    flash('You are live. Hit Play when an order comes in.');
   };
   return (
     <>
@@ -206,7 +227,7 @@ export function LiveStartCard() {
           <View style={{ flex: 1 }}><Btn kind="gold" block label="▶ DoorDash" onPress={() => start('doordash')} /></View>
           <View style={{ flex: 1 }}><Btn kind="gold" block label="▶ Uber Eats" onPress={() => start('ubereats')} /></View>
         </Row>
-        <Mut style={{ marginTop: 8 }}>Timer starts when you tap. Log each delivery as you go. End the dash and it saves as a completed block.</Mut>
+        <Mut style={{ marginTop: 8 }}>Tap when you go online. The dash clock runs on its own. Hit Play when an order comes in and Play made when you drop it. End dash asks for tips and total miles.</Mut>
       </Card>
     </>
   );
