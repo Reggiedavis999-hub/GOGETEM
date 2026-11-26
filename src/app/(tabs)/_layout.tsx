@@ -1,6 +1,7 @@
 import { router, Tabs } from 'expo-router';
 import React from 'react';
 import { ColorValue, Pressable, Text, View } from 'react-native';
+import { STORE_BUILD } from '../../lib/flavor';
 import { useStore } from '../../lib/store';
 import { C } from '../../lib/theme';
 
@@ -53,6 +54,7 @@ export default function TabsLayout() {
         }}
         listeners={{ tabPress: (e) => { e.preventDefault(); router.push('/add'); } }}
       />
+      <Tabs.Screen name="assist" options={{ title: STORE_BUILD ? "Go Get 'Em" : 'Go Get', tabBarIcon: icon('🤖') }} />
       <Tabs.Screen name="drops" options={{ title: 'Drops', tabBarIcon: icon('⚡') }} />
       <Tabs.Screen name="money" options={{ title: 'Money', tabBarIcon: icon('💰') }} />
     </Tabs>
