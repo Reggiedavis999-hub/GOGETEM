@@ -26,12 +26,14 @@ export function AssistPanel({
   const { assistant, flash } = useStore();
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<Proposal | null>(null);
+  const [err, setErr] = useState('');
   if (!assistant) return null;
   const ready = note.trim().length >= 3;
 
   const ask = async () => {
     setBusy(true);
     setRes(null);
+    setErr('');
     try {
       const now = Date.now();
       const r = await askAssistant(
@@ -48,7 +50,9 @@ export function AssistPanel({
       const a = r.changes.length ? applyAssist(state, r.changes) : null;
       setRes({ summary: r.summary, question: r.question, lines: a ? a.lines : [], errors: a ? a.errors : [], next: a && a.lines.length ? a.next : null });
     } catch (e) {
-      flash((e as ApiError).message || 'The assistant could not read that. Try again.');
+      const m = (e as ApiError).message || 'The assistant could not read that. Try again.';
+      setErr(m);
+      flash(m);
     }
     setBusy(false);
   };
@@ -57,6 +61,7 @@ export function AssistPanel({
     <View style={{ marginTop: 12 }}>
       <Btn sm kind="gold" label={busy ? 'Reading your note...' : `${ASSISTANT_NAME}: check my note`} onPress={ask} disabled={busy || !ready} />
       {!ready && <Text style={{ color: C.mute, fontSize: 12, marginTop: 6 }}>Write the note first, like "route was 84 mi, house to the facility was 12 mi, did not count it".</Text>}
+      {!!err && <Text style={{ color: C.red, fontSize: 14, fontWeight: '700', marginTop: 8 }}>{err}</Text>}
       {res && (
         <Card style={{ marginTop: 10, borderColor: C.goldLine }}>
           <Text style={{ color: C.gold, fontWeight: '800', marginBottom: 4 }}>{ASSISTANT_NAME}</Text>
