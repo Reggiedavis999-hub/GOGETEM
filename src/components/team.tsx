@@ -34,7 +34,7 @@ export function ChatPane({ target, onBack, onChanged }: { target: string; onBack
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [note, setNote] = useState('');
-  const scroller = useRef<ScrollView>(null);
+  const scroller = useRef<{ scrollToEnd: (o?: { animated?: boolean }) => void } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -88,7 +88,7 @@ export function ChatPane({ target, onBack, onChanged }: { target: string; onBack
         )}
       </View>
 
-      <ScrollView ref={scroller} nestedScrollEnabled style={{ maxHeight: 380, minHeight: 120, marginTop: 10 }} onContentSizeChange={() => scroller.current?.scrollToEnd({ animated: false })}>
+      <ScrollView ref={(r) => { scroller.current = r; }} nestedScrollEnabled style={{ maxHeight: 380, minHeight: 120, marginTop: 10 }} onContentSizeChange={() => scroller.current?.scrollToEnd({ animated: false })}>
         {msgs.length === 0 && <Mut>{isRoom ? 'No messages yet. Say what is up.' : 'No messages yet. Say what is up.'}</Mut>}
         {msgs.map((m) => (
           <View key={m.id} style={{ flexDirection: m.mine ? 'row-reverse' : 'row', alignItems: 'flex-end', marginBottom: 8 }}>

@@ -1,4 +1,4 @@
-import * as ImageManipulator from 'expo-image-manipulator';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -77,7 +77,7 @@ export async function pickAvatar(): Promise<string | null> {
   if (r.canceled || !r.assets?.length) return null;
   const ref = ImageManipulator.manipulate(r.assets[0].uri).resize({ width: 160 });
   const img = await ref.renderAsync();
-  const out = await img.saveAsync({ compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true });
+  const out = await img.saveAsync({ compress: 0.6, format: SaveFormat.JPEG, base64: true });
   if (!out.base64 || out.base64.length > 85000) throw new PickError('That picture could not be shrunk enough. Try another.');
   return out.base64;
 }

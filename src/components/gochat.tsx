@@ -20,7 +20,7 @@ export function GoChat({ enabled }: { enabled: boolean }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const seq = useRef(1);
-  const scroller = useRef<ScrollView>(null);
+  const scroller = useRef<{ scrollToEnd: (o?: { animated?: boolean }) => void } | null>(null);
 
   const add = async (fn: () => Promise<Picked | null>) => {
     setMenu(false); setErr('');
@@ -65,7 +65,7 @@ export function GoChat({ enabled }: { enabled: boolean }) {
       {!enabled && <Text style={{ color: C.amber, fontSize: 13, marginTop: 8 }}>The assistant is switched off on the server right now.</Text>}
 
       {msgs.length > 0 && (
-        <ScrollView ref={scroller} nestedScrollEnabled style={{ maxHeight: 360, marginTop: 10 }} onContentSizeChange={() => scroller.current?.scrollToEnd({ animated: true })}>
+        <ScrollView ref={(r) => { scroller.current = r; }} nestedScrollEnabled style={{ maxHeight: 360, marginTop: 10 }} onContentSizeChange={() => scroller.current?.scrollToEnd({ animated: true })}>
           {msgs.map((m) => (
             <View key={m.id} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '92%', marginBottom: 8, backgroundColor: m.role === 'user' ? C.goldDim : C.card2, borderWidth: 1, borderColor: m.role === 'user' ? C.goldLine : C.line, borderRadius: 14, padding: 10 }}>
               {!!m.files?.length && <Text style={{ color: C.gold, fontSize: 12, fontWeight: '700', marginBottom: 4 }}>📎 {m.files.join(', ')}</Text>}

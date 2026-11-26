@@ -40,7 +40,6 @@
         }
       ],
       "expo-document-picker",
-      "expo-image-manipulator",
       [
         "expo-notifications",
         {
