@@ -131,10 +131,11 @@ export function AuthScreen() {
   const [err, setErr] = useState('');
   const [info, setInfo] = useState('');
   const [busy, setBusy] = useState(false);
+  const [adult, setAdult] = useState(false);
   const [recovery, setRecovery] = useState('');
   const [afterCode, setAfterCode] = useState<'signup' | 'reset'>('signup');
 
-  const go = (m: Mode) => { setMode(m); setErr(''); setInfo(''); setPassword(''); setConfirm(''); setShowPw(false); };
+  const go = (m: Mode) => { setMode(m); setErr(''); setInfo(''); setPassword(''); setConfirm(''); setShowPw(false); setAdult(false); };
   const cleanEmail = () => email.trim().toLowerCase();
 
   const run = async (fn: () => Promise<void>, fallback: string) => {
@@ -153,6 +154,7 @@ export function AuthScreen() {
     if (!EMAIL_RE.test(cleanEmail())) { setErr('Enter a valid email address.'); return; }
     if (password.length < 8) { setErr('Use at least 8 characters for the password.'); return; }
     if (password !== confirm) { setErr('The two passwords do not match.'); return; }
+    if (!adult) { setErr('Confirm that you are 18 or older to create an account.'); return; }
     return run(async () => {
       const rc = await signup(name.trim(), cleanEmail(), password);
       setRecovery(rc); setAfterCode('signup'); setMode('code');
@@ -283,6 +285,21 @@ export function AuthScreen() {
                       ? 'Enter your email and we will send a 6-digit code to reset your password.'
                       : 'Enter your email, then use the recovery code you saved when you made your account.'}
                   </Text>
+                )}
+
+                {mode === 'signup' && (
+                  <Pressable
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: adult }}
+                    accessibilityLabel="I am 18 or older"
+                    onPress={() => setAdult((v) => !v)}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, minHeight: 44 }}
+                  >
+                    <View style={{ width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: adult ? C.gold : C.mute, backgroundColor: adult ? C.gold : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                      {adult && <Text style={{ color: C.goldInk, fontWeight: '800', fontSize: 15 }}>✓</Text>}
+                    </View>
+                    <Text style={{ color: C.text, fontSize: 14, flex: 1 }}>I am 18 or older</Text>
+                  </Pressable>
                 )}
 
                 <Text style={{ color: C.red, minHeight: 22, marginTop: 10 }} accessibilityLiveRegion="polite">{err || (mode === 'signin' ? bootError : '')}</Text>
