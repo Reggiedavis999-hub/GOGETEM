@@ -71,7 +71,7 @@ export default function EndDash() {
     <SheetScreen title={`End ${PLAT_NAME[live.plat]} dash`}>
       <Card style={{ backgroundColor: C.card2 }}>
         <Text style={{ color: C.text, fontSize: 30, fontWeight: '800' }}>{money(assistTotal(state))}</Text>
-        <Text style={{ color: C.mute, fontSize: 13 }}>{r.done} play{r.done === 1 ? '' : 's'} · {r.deliveries} deliver{r.deliveries === 1 ? 'y' : 'ies'} · tips are inside this total</Text>
+        <Text style={{ color: C.mute, fontSize: 13 }}>{r.done} play{r.done === 1 ? '' : 's'} · {r.deliveries} order{r.deliveries === 1 ? '' : 's'} · tips are inside this total</Text>
         <View style={{ marginTop: 10, gap: 3 }}>
           <Text style={{ color: C.text, fontSize: 14 }}>Dash time <Text style={{ fontWeight: '800' }}>{dur(r.dashMs)}</Text> · Active <Text style={{ fontWeight: '800' }}>{dur(r.activeMs)}</Text> · Dead <Text style={{ fontWeight: '800' }}>{dur(r.deadMs)}</Text></Text>
           <Text style={{ color: C.text, fontSize: 14 }}><Text style={{ fontWeight: '800' }}>{money(r.perHrDash)}/hr</Text> over dash time · <Text style={{ fontWeight: '800' }}>{money(r.perHrActive)}/hr</Text> over active time</Text>

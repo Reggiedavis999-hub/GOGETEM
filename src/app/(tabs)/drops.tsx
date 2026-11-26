@@ -49,7 +49,7 @@ export default function Drops() {
       <H2>Your drop pattern</H2>
       <Card>
         {!own ? (
-          <Text style={{ color: C.text }}><Text style={{ fontWeight: '800' }}>{list.length} of 8 drops logged.</Text> Log 8 or more and this shows the hours your station actually drops blocks.</Text>
+          <Text style={{ color: C.text }}><Text style={{ fontWeight: '800' }}>{list.length} of 8 drops logged.</Text> Log 8 or more and this shows the hours your station actually drops plays.</Text>
         ) : (
           <Text style={{ color: C.text }}>Your best hours: <Text style={{ color: C.green, fontWeight: '800' }}>{tops.map(hourLabel).join(', ')}</Text></Text>
         )}

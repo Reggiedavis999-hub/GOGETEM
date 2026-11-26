@@ -28,7 +28,7 @@ export default function PlayMade() {
   return (
     <SheetScreen title={`Play ${n} complete`}>
       <Text style={{ color: C.text, fontSize: 14 }}>
-        {dur(ms)} on this play · {op.deliveries} {op.deliveries === 1 ? 'delivery' : 'deliveries'}{op.rate > 0 ? ` · base ${money(op.rate)}/hr = ${money(op.rate * (ms / 3600000))} so far` : ''}
+        {dur(ms)} on this play · {op.deliveries} {op.deliveries === 1 ? 'order' : 'orders'}{op.rate > 0 ? ` · base ${money(op.rate)}/hr = ${money(op.rate * (ms / 3600000))} so far` : ''}
       </Text>
       <Field label="Total $ this play paid (tips included)" value={total} onChangeText={setTotal} keyboardType="decimal-pad" placeholder="0" autoFocus hint={t > 0 && ms >= 60000 ? `${money(t / (ms / 3600000))}/hr on this play` : undefined} />
       <Note>Type what DoorDash shows you earned for this play. You can fix it later from the Schedule tab if the payout changes.{end === '1' ? ' Then you go straight to End dash.' : ''}</Note>

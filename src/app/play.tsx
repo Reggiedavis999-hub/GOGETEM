@@ -21,8 +21,8 @@ export default function PlayForm() {
   const save = () => {
     const r = cleanNum(rate);
     const d = Math.round(cleanNum(dels));
-    if (d < 1) { flash('Deliveries is how many orders are on this play. Use 1 for a single, 2 for a stack.'); return; }
-    if (d > 20) { flash('That is a lot of deliveries for one play. Check the number.'); return; }
+    if (d < 1) { flash('Orders is how many orders are on this play. Use 1 for a single, 2 for a stack.'); return; }
+    if (d > 20) { flash('That is a lot of orders for one play. Check the number.'); return; }
     if (ed) {
       const t = cleanNum(total);
       if (closed && t <= 0) { flash('A finished play needs the total it paid.'); return; }
@@ -37,7 +37,7 @@ export default function PlayForm() {
     const resumed = live.paused ? { paused: 0, pausedMs: (live.pausedMs || 0) + (now - live.paused) } : {};
     setLive({ ...live, ...resumed, rate: r > 0 ? r : live.rate, plays: [...live.plays, { id: newId(), start: now, rate: r, deliveries: d, total: 0 }] });
     router.back();
-    flash(`Play ${n} started${d > 1 ? ` (${d} deliveries)` : ''}`);
+    flash(`Play ${n} started${d > 1 ? ` (${d} orders)` : ''}`);
   };
   const remove = () => tap('rm', () => {
     setLive({ ...live, plays: live.plays.filter((p) => p.id !== id) });
@@ -49,13 +49,13 @@ export default function PlayForm() {
     <SheetScreen title={`Play ${n}`}>
       <Two>
         <Field label="Base rate $/hr" value={rate} onChangeText={setRate} keyboardType="decimal-pad" placeholder="18.75" />
-        <Field label="Deliveries" value={dels} onChangeText={setDels} keyboardType="number-pad" placeholder="1" />
+        <Field label="Orders in this play" value={dels} onChangeText={setDels} keyboardType="number-pad" placeholder="1" />
       </Two>
       {closed && <Field label="Total $ this play paid" value={total} onChangeText={setTotal} keyboardType="decimal-pad" placeholder="0" hint={cleanNum(total) > 0 ? money(cleanNum(total)) + ' total' : undefined} />}
       <Note>
         {ed
-          ? `Fix the rate, the number of deliveries${closed ? ' or the total' : ''} for this play.`
-          : `Base rate is the hourly rate DoorDash shows for this order right now${live.rate ? ` (last one was ${money(live.rate)}/hr)` : ''}. Peak pay or a promo changed it? Type the new rate. It only counts for this play. Deliveries: 1 for a single, 2 or more for a stack. The play's clock starts when you tap Start play.`}
+          ? `Fix the rate, the number of orders${closed ? ' or the total' : ''} for this play.`
+          : `Base rate is the hourly rate DoorDash shows for this order right now${live.rate ? ` (last one was ${money(live.rate)}/hr)` : ''}. Peak pay or a promo changed it? Type the new rate. It only counts for this play. Orders: 1 for a single, 2 or more for a stack. The play's clock starts when you tap Start play.`}
       </Note>
       <Actions>
         <Btn kind="gold" label={ed ? 'Save play' : '▶ Make the play'} onPress={save} />

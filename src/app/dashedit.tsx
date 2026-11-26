@@ -91,7 +91,7 @@ export default function DashEdit() {
             <Text style={{ color: C.text, fontWeight: '800' }}>Play {i + 1}{play && ms >= 60000 && cleanNum(r.total) > 0 ? ` · ${money(cleanNum(r.total) / (ms / 3600000))}/hr` : ''}</Text>
             <Two>
               <Field label="Base rate $/hr" value={r.rate} onChangeText={(t) => set(i, { rate: t })} keyboardType="decimal-pad" placeholder="18.75" />
-              <Field label="Deliveries" value={r.del} onChangeText={(t) => set(i, { del: t })} keyboardType="number-pad" placeholder="1" />
+              <Field label="Orders in this play" value={r.del} onChangeText={(t) => set(i, { del: t })} keyboardType="number-pad" placeholder="1" />
             </Two>
             <Two>
               <Field label="Play start" value={r.start} onChangeText={(t) => set(i, { start: t })} autoCapitalize="none" autoCorrect={false} />
@@ -113,7 +113,7 @@ export default function DashEdit() {
             <Text style={{ color: C.text, fontSize: 14 }}>Dash <Text style={{ fontWeight: '800' }}>{dur(stats.dashMs)}</Text> · Active <Text style={{ fontWeight: '800' }}>{dur(stats.activeMs)}</Text> · Dead <Text style={{ fontWeight: '800' }}>{dur(stats.deadMs)}</Text></Text>
             <Text style={{ color: C.text, fontSize: 14 }}>{money(stats.perHrDash)}/hr dash time · {money(stats.perHrActive)}/hr active</Text>
             {stats.base > 0 && <Text style={{ color: C.text, fontSize: 14 }}>Base rates {money(stats.base)} · {money(Math.abs(stats.above))} {stats.above >= 0 ? 'above' : 'under'} base</Text>}
-            {stats.perMile > 0 && <Text style={{ color: C.text, fontSize: 14 }}>{money(stats.perMile)} per mile · {num(built.fields.miles, 1)} mi · {stats.deliveries} deliveries</Text>}
+            {stats.perMile > 0 && <Text style={{ color: C.text, fontSize: 14 }}>{money(stats.perMile)} per mile · {num(built.fields.miles, 1)} mi · {stats.deliveries} orders</Text>}
           </View>
         ) : (
           <Text style={{ color: C.red, fontSize: 14 }}>{built.ok ? '' : built.error}</Text>

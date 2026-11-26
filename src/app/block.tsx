@@ -160,7 +160,7 @@ export default function BlockForm() {
             <Field label="Miles" value={miles} onChangeText={setMiles} keyboardType="decimal-pad" placeholder="0" />
             <Field label="Tips $ (part of total)" value={tips} onChangeText={setTips} keyboardType="decimal-pad" placeholder="0" />
           </Two>
-          <Field label="Orders / deliveries" value={orders} onChangeText={setOrders} keyboardType="number-pad" placeholder="0" />
+          <Field label="Orders in this play" value={orders} onChangeText={setOrders} keyboardType="number-pad" placeholder="0" />
           {tipsTooBig && <Text style={{ color: C.red, fontSize: 13, marginTop: 10 }}>Tips are more than the total. The total should include the tips.</Text>}
           {!tipsTooBig && totalNum > 0 && (
             <Text style={{ color: C.text, fontSize: 13, marginTop: 10, lineHeight: 19 }}>
@@ -175,7 +175,7 @@ export default function BlockForm() {
         <AssistPanel
           note={note}
           state={{ miles: cleanNum(miles), tips: tipNum, total: totalNum, plays: [], expenses }}
-          context={{ platform: plat, kind: plat === 'flex' ? 'Amazon Flex block' : 'block', date, hours: hv, orders: Math.round(cleanNum(orders)) }}
+          context={{ platform: plat, kind: plat === 'flex' ? 'Amazon Flex play' : 'play', date, hours: hv, orders: Math.round(cleanNum(orders)) }}
           onApply={(n) => { setMiles(n.miles ? String(n.miles) : ''); setTips(n.tips ? String(n.tips) : ''); setPay(n.total ? String(n.total) : ''); setExpenses(n.expenses); }}
         />
       )}

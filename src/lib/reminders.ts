@@ -80,7 +80,7 @@ async function run(entries: Entry[], enabled: boolean): Promise<void> {
       const s = startOf(b).getTime();
       const where = b.station ? ` · ${b.station}` : '';
       const penalty = plat === 'flex' ? ' Cancel more than 45 minutes before it starts to avoid a penalty.' : '';
-      await at(s - 60 * 60000, `${name} block in 1 hour`, `${fmtTime(b.start)}${where}.${penalty}`);
+      await at(s - 60 * 60000, `${name} play in 1 hour`, `${fmtTime(b.start)}${where}.${penalty}`);
       await at(s, 'Play starting now', `${name} · ${fmtTime(b.start)}${where}. Check in and go get it.`);
       await at(endOf(b).getTime(), 'Play finished?', 'Log your pay, tips and miles while it is fresh.');
     }

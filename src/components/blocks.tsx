@@ -109,7 +109,7 @@ function DashLines({ e }: { e: Block }) {
         const ms = playMs(p, 0);
         return (
           <Mut key={p.id}>
-            #{i + 1} {money(p.total)}{p.rate > 0 ? ` · ${money(p.rate)}/hr base` : ''} · {p.deliveries} {p.deliveries === 1 ? 'delivery' : 'deliveries'}{ms >= 60000 ? ` · ${dur(ms)} · ${money(p.total / (ms / 3600000))}/hr` : ''}
+            #{i + 1} {money(p.total)}{p.rate > 0 ? ` · ${money(p.rate)}/hr base` : ''} · {p.deliveries} {p.deliveries === 1 ? 'order' : 'orders'}{ms >= 60000 ? ` · ${dur(ms)} · ${money(p.total / (ms / 3600000))}/hr` : ''}
           </Mut>
         );
       })}
@@ -191,7 +191,7 @@ function LiveBody({ armed, tap, flash, setLive }: { armed: string | null; tap: (
           <View key={p.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, marginTop: i === 0 ? 8 : 0, borderTopWidth: 1, borderTopColor: C.line }}>
             <View style={{ flex: 1 }}>
               <Text style={{ color: running ? C.green : C.text, fontWeight: '700' }}>#{i + 1} · {running ? `in progress ${clk(ms)}` : money(p.total)}</Text>
-              <Mut>{p.rate > 0 ? `${money(p.rate)}/hr base · ` : ''}{p.deliveries} {p.deliveries === 1 ? 'delivery' : 'deliveries'}{!running && ms >= 60000 ? ` · ${dur(ms)} · ${money(p.total / (ms / 3600000))}/hr` : ''}</Mut>
+              <Mut>{p.rate > 0 ? `${money(p.rate)}/hr base · ` : ''}{p.deliveries} {p.deliveries === 1 ? 'order' : 'orders'}{!running && ms >= 60000 ? ` · ${dur(ms)} · ${money(p.total / (ms / 3600000))}/hr` : ''}</Mut>
             </View>
             <Btn sm label="Edit" onPress={() => router.push({ pathname: '/play', params: { id: p.id } })} />
           </View>

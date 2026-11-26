@@ -359,7 +359,7 @@ export function buildDash(i: DashInput): { ok: true; dash: DashDetail; fields: D
     const pe = msFromHM(i.date, b, ps + 1);
     if (pe < ps) return { ok: false, error: `Play ${k + 1} ends before it starts.` };
     if (ps < ds - 60000 || pe > de + 60000) return { ok: false, error: `Play ${k + 1} runs outside the dash time. Check its times.` };
-    if (!(r.deliveries >= 1)) return { ok: false, error: `Play ${k + 1} needs at least 1 delivery.` };
+    if (!(r.deliveries >= 1)) return { ok: false, error: `Play ${k + 1} needs at least 1 order.` };
     plays.push({ id: r.id, start: ps, end: pe, rate: Math.max(0, r.rate || 0), deliveries: Math.round(r.deliveries), total: c2(Math.max(0, r.total || 0)) });
   }
   plays.sort((x, y) => x.start - y.start);
