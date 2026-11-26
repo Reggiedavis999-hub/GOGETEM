@@ -33,6 +33,14 @@
       "expo-router",
       "expo-secure-store",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Dashin & Flexin reads the photo you pick to answer your question. It is only sent when you tap Send.",
+          "cameraPermission": "Dashin & Flexin uses the camera only when you tap Take photo to ask a question about it."
+        }
+      ],
+      "expo-document-picker",
+      [
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",

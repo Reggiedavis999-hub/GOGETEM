@@ -46,9 +46,9 @@ export const hasToken = () => !!TOKEN;
 const OPEN_OPS: Record<string, 1> = { login: 1, signup: 1, me: 1, forgot: 1, reset: 1 };
 
 /** One call to POST /api/hq with the Bearer token. */
-export async function apiRaw<T = Record<string, unknown>>(op: string, body: Record<string, unknown> = {}): Promise<T> {
+export async function apiRaw<T = Record<string, unknown>>(op: string, body: Record<string, unknown> = {}, timeoutMs = 25000): Promise<T> {
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 25000);
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
   let r: Response;
   try {
     const headers: Record<string, string> = { 'content-type': 'application/json' };
@@ -108,4 +108,15 @@ export interface AssistReply {
 /** Asks the notes assistant to read a note. Never saves anything: the app shows the proposal and the person confirms. */
 export function askAssistant(text: string, context: Record<string, unknown>, clean: boolean): Promise<AssistReply> {
   return apiRaw<AssistReply>('assist', { text, context, clean });
+}
+
+export interface ChatTurn { role: 'user' | 'assistant'; text: string }
+export interface ChatAttachment { mime: string; data: string }
+export interface ChatFile { name: string; text: string }
+
+/** One chat turn. The server never changes saved data from chat. Attachments ride only on the newest message. */
+export function askChat(
+  messages: ChatTurn[], attachments: ChatAttachment[], files: ChatFile[], clean: boolean,
+): Promise<{ reply: string }> {
+  return apiRaw<{ reply: string }>('chat', { messages, attachments, files, clean }, 40000);
 }
