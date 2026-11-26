@@ -70,7 +70,7 @@ export default function Settings() {
       <Field label="Default station / area" value={station} onChangeText={setStation} />
       <Field label="Mileage rate override $/mile (blank = IRS rate)" value={rate} onChangeText={setRate} keyboardType="decimal-pad" />
       <Actions>
-        <Btn kind="gold" label="Save" onPress={save} />
+        <Btn kind="gold" label="Fuck wit somin" onPress={save} />
         <Btn label="Cancel" onPress={() => router.back()} />
       </Actions>
       <H2>Reminders</H2>

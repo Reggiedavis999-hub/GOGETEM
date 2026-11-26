@@ -86,7 +86,7 @@ export default function Drops() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
                   <Text style={{ color: C.text, fontWeight: '700' }}>{fmtStamp(d.ts)}</Text>
                   {d.got === true && <Tag gold label="Caught" />}
-                  {d.got === false && <Tag label="Missed" />}
+                  {d.got === false && <Tag label="Tighten up" />}
                 </View>
                 <Mut>{who(d.who)}{d.station ? ' · ' + d.station : ''}{d.pay ? ' · ' + money(d.pay) : ''}</Mut>
               </View>

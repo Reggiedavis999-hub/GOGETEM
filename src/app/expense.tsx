@@ -40,7 +40,7 @@ export default function ExpenseForm() {
       <Picker<ExpPlatform> label="Applies to" value={plat} onChange={setPlat} options={[{ k: 'all', label: 'All / shared' }, { k: 'flex', label: 'Flex only' }, { k: 'doordash', label: 'DoorDash only' }, { k: 'ubereats', label: 'Uber Eats only' }]} />
       <Field label="Note" value={note} onChangeText={setNote} />
       <Actions>
-        <Btn kind="gold" label={busy ? 'Saving...' : 'Save'} onPress={save} disabled={busy} />
+        <Btn kind="gold" label={busy ? 'Fuckin wit it...' : 'Fuck wit somin'} onPress={save} disabled={busy} />
         <Btn label="Cancel" onPress={() => router.back()} />
       </Actions>
     </SheetScreen>

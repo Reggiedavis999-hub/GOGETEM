@@ -110,7 +110,7 @@ function RecoveryPanel({ code, intro, cta, onDone }: { code: string; intro: stri
         Screenshot it or send it to your notes. It will not be shown again. Each time you use it, you get a new one.
       </Text>
       <View style={{ marginTop: 16, gap: 10 }}>
-        <Btn block label={shared ? 'Saved. Share again' : 'Save / share code'} onPress={share} />
+        <Btn block label={shared ? 'Done. Share again' : 'Fuck wit somin / share code'} onPress={share} />
         <Btn kind="gold" block label={cta} onPress={onDone} />
       </View>
     </View>

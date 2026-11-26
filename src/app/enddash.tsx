@@ -96,7 +96,7 @@ export default function EndDash() {
       )}
       <Note>Tips here are just a record. The total is what every number above runs off. Miles are for the whole session, not each play.</Note>
       <Actions>
-        <Btn kind="gold" label={busy ? 'Saving...' : 'Save dash'} onPress={save} disabled={busy} />
+        <Btn kind="gold" label={busy ? 'Fuckin wit it...' : 'Fuck wit somin'} onPress={save} disabled={busy} />
         <Btn label="Cancel" onPress={() => router.back()} />
       </Actions>
       <Text style={{ color: C.mute, fontSize: 12, marginTop: 10 }}>You can open this dash later in the Schedule tab and edit any time, rate, total, tip or mile.</Text>

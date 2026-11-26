@@ -21,7 +21,7 @@ export default function PlayForm() {
   const save = () => {
     const r = cleanNum(rate);
     const d = Math.round(cleanNum(dels));
-    if (d < 1) { flash('Orders is how many orders are on this play. Use 1 for a single, 2 for a stack.'); return; }
+    if (d < 1) { flash('Tell me how many plays. Use 1 for a single, 2 for a stack.'); return; }
     if (d > 20) { flash('That is a lot of orders for one play. Check the number.'); return; }
     if (ed) {
       const t = cleanNum(total);
@@ -49,7 +49,7 @@ export default function PlayForm() {
     <SheetScreen title={`Play ${n}`}>
       <Two>
         <Field label="Base rate $/hr" value={rate} onChangeText={setRate} keyboardType="decimal-pad" placeholder="18.75" />
-        <Field label="Orders in this play" value={dels} onChangeText={setDels} keyboardType="number-pad" placeholder="1" />
+        <Field label="How many plays?" value={dels} onChangeText={setDels} keyboardType="number-pad" placeholder="1" />
       </Two>
       {closed && <Field label="Total $ this play paid" value={total} onChangeText={setTotal} keyboardType="decimal-pad" placeholder="0" hint={cleanNum(total) > 0 ? money(cleanNum(total)) + ' total' : undefined} />}
       <Note>
@@ -58,7 +58,7 @@ export default function PlayForm() {
           : `Base rate is the hourly rate DoorDash shows for this order right now${live.rate ? ` (last one was ${money(live.rate)}/hr)` : ''}. Peak pay or a promo changed it? Type the new rate. It only counts for this play. Orders: 1 for a single, 2 or more for a stack. The play's clock starts when you tap Start play.`}
       </Note>
       <Actions>
-        <Btn kind="gold" label={ed ? 'Save play' : '▶ Make the play'} onPress={save} />
+        <Btn kind="gold" label={ed ? 'Fuck wit somin' : '▶ Make the play'} onPress={save} />
         <Btn label="Cancel" onPress={() => router.back()} />
         {ed && <Btn kind="danger" label={armed === 'rm' ? 'Tap again to remove' : 'Remove play'} onPress={remove} />}
       </Actions>

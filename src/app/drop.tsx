@@ -14,16 +14,16 @@ export default function DropForm() {
   const [pay, setPay] = useState(e?.pay ? String(e.pay) : '');
   if (!e) return <SheetScreen title="Drop"><Btn label="Close" onPress={() => router.back()} /></SheetScreen>;
   const save = async () => {
-    if (await saveEntry({ ...e, got: got === 'yes' ? true : got === 'no' ? false : null, station: station.trim(), pay: cleanNum(pay) })) { router.back(); flash('Saved'); }
+    if (await saveEntry({ ...e, got: got === 'yes' ? true : got === 'no' ? false : null, station: station.trim(), pay: cleanNum(pay) })) { router.back(); flash('Done'); }
   };
   return (
     <SheetScreen title={`Drop logged ${fmtStamp(e.ts)}`}>
       <Mut>Optional details. Skip if you are busy.</Mut>
-      <Picker<'' | 'yes' | 'no'> label="Did you catch one?" value={got} onChange={setGot} options={[{ k: '', label: 'Not sure' }, { k: 'yes', label: 'Yes, caught one' }, { k: 'no', label: 'No, missed it' }]} />
+      <Picker<'' | 'yes' | 'no'> label="Catching plays" value={got} onChange={setGot} options={[{ k: 'yes', label: 'Caught one' }, { k: 'no', label: 'Tighten up and get ya some money' }]} />
       <Field label="Station / area" value={station} onChangeText={setStation} />
       <Field label="Best offer seen $" value={pay} onChangeText={setPay} keyboardType="decimal-pad" placeholder="0" />
       <Actions>
-        <Btn kind="gold" label="Save" onPress={save} />
+        <Btn kind="gold" label="Fuck wit somin" onPress={save} />
         <Btn label="Done" onPress={() => router.back()} />
       </Actions>
     </SheetScreen>

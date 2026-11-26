@@ -73,7 +73,7 @@ export default function BlockForm() {
   const confirmOnce = (key: string, msg: string) => {
     if (ack.current === key) return true;
     ack.current = key;
-    flash(msg + ' Tap Save again to keep it.');
+    flash(msg + ' Tap Fuck wit somin again to keep it.');
     return false;
   };
 
@@ -181,7 +181,7 @@ export default function BlockForm() {
       )}
       {showDone && expenses.length > 0 && <Text style={{ color: C.text, fontSize: 13, marginTop: 10 }}>Expenses that will be added: {expenses.map((x) => `${x.cat} ${money(x.amt)}`).join(', ')}</Text>}
       <Actions>
-        <Btn kind="gold" label={busy ? 'Saving...' : 'Save'} onPress={save} disabled={busy} />
+        <Btn kind="gold" label={busy ? 'Fuckin wit it...' : 'Fuck wit somin'} onPress={save} disabled={busy} />
         <Btn label="Cancel" onPress={() => router.back()} />
       </Actions>
       <Text style={{ color: C.mute, fontSize: 12, marginTop: 10 }}>Times accept 6am, 6:30 pm or 18:00. Dates accept 11/22 or 2026-11-22.</Text>

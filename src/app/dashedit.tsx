@@ -135,7 +135,7 @@ export default function DashEdit() {
       {expenses.length > 0 && <Text style={{ color: C.text, fontSize: 13, marginTop: 10 }}>Expenses that will be added: {expenses.map((x) => `${x.cat} ${money(x.amt)}`).join(', ')}</Text>}
       <Note>Times accept 6am, 6:30 pm or 18:00. The saved dash total is always the sum of the play totals, with tips inside it.</Note>
       <Actions>
-        <Btn kind="gold" label={busy ? 'Saving...' : 'Save dash'} onPress={save} disabled={busy} />
+        <Btn kind="gold" label={busy ? 'Fuckin wit it...' : 'Fuck wit somin'} onPress={save} disabled={busy} />
         <Btn label="Cancel" onPress={() => router.back()} />
         {!!b.dash && <Btn kind="danger" label={armed === 'plain' ? 'Tap again to confirm' : 'Back to a single play'} onPress={() => tap('plain', plain)} />}
       </Actions>

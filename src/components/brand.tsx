@@ -8,9 +8,9 @@ const Q = encodeURIComponent(ARTIST);
 
 const LISTEN: { name: string; url: string }[] = [
   { name: 'YouTube', url: 'https://www.youtube.com/@fullygogetemloaded' },
-  { name: 'Spotify', url: `https://open.spotify.com/search/${Q}` },
-  { name: 'Apple Music', url: `https://music.apple.com/us/search?term=${Q}` },
-  { name: 'YouTube Music', url: `https://music.youtube.com/search?q=${Q}` },
+  { name: 'Spotify', url: 'https://open.spotify.com/artist/3now5sjWTwFHjeLyzY7t82' },
+  { name: 'Apple Music', url: 'https://music.apple.com/us/artist/fullygogetemloaded/6807025742' },
+  { name: 'YouTube Music', url: 'https://music.youtube.com/@fullygogetemloaded' },
   { name: 'Amazon Music', url: `https://music.amazon.com/search/${Q}` },
   { name: 'SoundCloud', url: `https://soundcloud.com/search?q=${Q}` },
   { name: 'Tidal', url: `https://tidal.com/search?q=${Q}` },
@@ -21,7 +21,8 @@ const LISTEN: { name: string; url: string }[] = [
 
 const FOLLOW: { name: string; url: string }[] = [
   { name: 'Instagram', url: 'https://instagram.com/fullygogetemloaded' },
-  { name: 'TikTok', url: 'https://tiktok.com/@fullygogetemloaded' },
+  { name: 'TikTok', url: 'https://www.tiktok.com/@fullygogetemloaded' },
+  { name: 'Facebook', url: 'https://www.facebook.com/share/1DuekRoaab/' },
 ];
 
 const open = (url: string) => { Linking.openURL(url).catch(() => {}); };
