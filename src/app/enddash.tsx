@@ -25,9 +25,9 @@ export default function EndDash() {
   if (op) {
     return (
       <SheetScreen title="End dash">
-        <Text style={{ color: C.text, fontSize: 15 }}>You still have a play running. Tap Play made first so its total is counted.</Text>
+        <Text style={{ color: C.text, fontSize: 15 }}>You still have a play running. Tap Play complete first so its total is counted.</Text>
         <Actions>
-          <Btn kind="gold" label="✔ Play made, then end dash" onPress={() => { router.back(); setTimeout(() => router.push({ pathname: '/playmade', params: { end: '1' } }), 60); }} />
+          <Btn kind="gold" label="✔ Play complete, then end dash" onPress={() => { router.back(); setTimeout(() => router.push({ pathname: '/playmade', params: { end: '1' } }), 60); }} />
           <Btn label="Cancel" onPress={() => router.back()} />
         </Actions>
       </SheetScreen>

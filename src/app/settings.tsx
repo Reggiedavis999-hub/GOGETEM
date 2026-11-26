@@ -77,13 +77,13 @@ export default function Settings() {
       {NOTIFS_SUPPORTED ? (
         <>
           <Row>
-            <Text style={{ color: C.text, fontWeight: '700', flex: 1 }}>Block reminders</Text>
-            <Switch value={reminders} onValueChange={toggleReminders} trackColor={{ false: '#3a3a44', true: C.goldLine }} thumbColor={reminders ? C.gold : '#9a978f'} accessibilityLabel="Block reminders" />
+            <Text style={{ color: C.text, fontWeight: '700', flex: 1 }}>Play reminders</Text>
+            <Switch value={reminders} onValueChange={toggleReminders} trackColor={{ false: '#3a3a44', true: C.goldLine }} thumbColor={reminders ? C.gold : '#9a978f'} accessibilityLabel="Play reminders" />
           </Row>
-          <Note>A heads-up 1 hour before each upcoming block, when it starts, and when it ends so you can log your results.</Note>
+          <Note>A heads-up 1 hour before each upcoming play, when it starts, and when it ends so you can log your results.</Note>
         </>
       ) : (
-        <Note>Block reminders need the phone app. This web version can't send them, so set your own phone alarm for blocks.</Note>
+        <Note>Play reminders need the phone app. This web version can't send them, so set your own phone alarm for plays.</Note>
       )}
       <H2>Account</H2>
       <Mut>{me?.email || ''}</Mut>
@@ -111,7 +111,7 @@ export default function Settings() {
         {assistant && <Btn sm label="AI assistant notice" onPress={() => Linking.openURL(`${site}/ai.html`).catch(() => {})} />}
       </Actions>
       <H2>Delete account</H2>
-      <Mut>This permanently deletes your account and every block, drop and expense in it. It cannot be undone.</Mut>
+      <Mut>This permanently deletes your account and every play, drop and expense in it. It cannot be undone.</Mut>
       <Field label="Password" value={delPw} onChangeText={setDelPw} secureTextEntry autoCapitalize="none" autoComplete="current-password" maxLength={200} />
       {!!delErr && <Text style={{ color: C.red, marginTop: 8 }} accessibilityLiveRegion="polite">{delErr}</Text>}
       <Actions>

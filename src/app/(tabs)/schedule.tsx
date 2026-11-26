@@ -47,14 +47,14 @@ export default function Schedule() {
       {p.future.length > 0 && (
         <>
           <Text style={{ color: C.text, fontSize: 13, marginTop: 8 }}>
-            {p.future.length} block{p.future.length === 1 ? ' is' : 's are'} marked completed but {p.future.length === 1 ? 'has' : 'have'} not happened yet: {p.future.map((e) => `${fmtDate(e.date)} ${fmtTime(e.start)}`).join(', ')}. {p.future.length === 1 ? 'It is' : 'They are'} counting as money earned.
+            {p.future.length} play{p.future.length === 1 ? ' is' : 's are'} marked completed but {p.future.length === 1 ? 'has' : 'have'} not happened yet: {p.future.map((e) => `${fmtDate(e.date)} ${fmtTime(e.start)}`).join(', ')}. {p.future.length === 1 ? 'It is' : 'They are'} counting as money earned.
           </Text>
           <Actions><Btn sm kind="gold" label="Move to Upcoming" onPress={fixFuture} /></Actions>
         </>
       )}
       {p.dups.length > 0 && (
         <>
-          <Text style={{ color: C.text, fontSize: 13, marginTop: 10 }}>{p.dups.length} duplicate block{p.dups.length === 1 ? '' : 's'}: same platform, date, time and pay listed more than once.</Text>
+          <Text style={{ color: C.text, fontSize: 13, marginTop: 10 }}>{p.dups.length} duplicate play{p.dups.length === 1 ? '' : 's'}: same platform, date, time and pay listed more than once.</Text>
           <Actions><Btn sm kind="danger" label={armed === 'dd' ? `Tap again to remove ${p.dups.length}` : 'Remove duplicates'} onPress={dedupe} /></Actions>
         </>
       )}
@@ -66,7 +66,7 @@ export default function Schedule() {
       ))}
       {p.overlap.map((e) => (
         <Row key={'v' + e.id} style={{ marginTop: 10 }}>
-          <Text style={{ color: C.text, fontSize: 13, flex: 1 }}>{fmtDate(e.date)} {fmtTime(e.start)} overlaps another {PLAT_NAME[normPlat(e.platform)]} block.</Text>
+          <Text style={{ color: C.text, fontSize: 13, flex: 1 }}>{fmtDate(e.date)} {fmtTime(e.start)} overlaps another {PLAT_NAME[normPlat(e.platform)]} play.</Text>
           <Btn sm label="Fix" onPress={() => router.push({ pathname: '/block', params: { id: e.id } })} />
         </Row>
       ))}
@@ -79,9 +79,9 @@ export default function Schedule() {
     const exp = up.reduce((s, e) => s + (+e.pay || 0) + (+e.tips || 0), 0);
     body = (
       <>
-        {!up.length ? <Card><Empty>Nothing scheduled.{'\n'}Tap + and choose Upcoming block I grabbed.</Empty></Card> : (
+        {!up.length ? <Card><Empty>Nothing scheduled.{'\n'}Tap + and choose Upcoming play I grabbed.</Empty></Card> : (
           <>
-            <Mut style={{ marginHorizontal: 2 }}>{up.length} block{up.length === 1 ? '' : 's'} · {num(hrs)} hours · {money(exp)} expected</Mut>
+            <Mut style={{ marginHorizontal: 2 }}>{up.length} play{up.length === 1 ? '' : 's'} · {num(hrs)} hours · {money(exp)} expected</Mut>
             <DayBlocks list={up} now={now} nextId={nextId} />
           </>
         )}
@@ -94,10 +94,10 @@ export default function Schedule() {
         <Card style={{ marginTop: 14 }}>
           <Text style={{ color: C.text, fontWeight: '700', marginBottom: 6 }}>Stay in good standing</Text>
           {[
-            ['Cancel more than 45 minutes before a block starts.', ' Late cancels and no-shows are top reasons for deactivation.'],
+            ['Cancel more than 45 minutes before a play starts.', ' Late cancels and no-shows are top reasons for deactivation.'],
             ['Turn on notifications', ' in the Flex app and keep your station radius wide.'],
             ['Check your Rewards level.', ' Level 2 and up unlocks preferred scheduling for chances at exclusive offers.'],
-            ['Peak season is Black Friday through Christmas.', ' More blocks and more surge. Check often, not just at drop times.'],
+            ['Peak season is Black Friday through Christmas.', ' More plays and more surge. Check often, not just at drop times.'],
             ['Do not use auto-grab bots.', ' Amazon actively detects them and removes accounts.'],
           ].map(([b, r], i) => (
             <Text key={i} style={{ color: C.text, marginVertical: 4, fontSize: 14 }}>• <Text style={{ fontWeight: '800' }}>{b}</Text>{r}</Text>
@@ -127,8 +127,8 @@ export default function Schedule() {
     const rc = sumBlocks(doneBlocks(entries, now).filter((e) => e.date < td && e.date >= ymd(new Date(Date.now() - 30 * 86400000))), settings.rate);
     body = (
       <>
-        <Mut style={{ marginHorizontal: 2 }}>Last 30 days: {rc.n} block{rc.n === 1 ? '' : 's'} · {money(rc.gross)}{rc.hours > 0 ? ` · ${money(rc.perHr)}/hr` : ''}</Mut>
-        {!past.length && <Card><Empty>No past blocks yet.</Empty></Card>}
+        <Mut style={{ marginHorizontal: 2 }}>Last 30 days: {rc.n} play{rc.n === 1 ? '' : 's'} · {money(rc.gross)}{rc.hours > 0 ? ` · ${money(rc.perHr)}/hr` : ''}</Mut>
+        {!past.length && <Card><Empty>No past plays yet.</Empty></Card>}
         <DayBlocks list={past.slice(0, pastN)} now={now} nextId={nextId} />
         {past.length > pastN && <Btn block label={`Show more (${past.length - pastN})`} onPress={() => setPastN((n) => n + 30)} style={{ marginTop: 8 }} />}
       </>

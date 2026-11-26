@@ -26,7 +26,7 @@ export async function initNotifications(): Promise<void> {
   });
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(CHANNEL, {
-      name: 'Block reminders',
+      name: 'Play reminders',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#f0be2f',
@@ -81,8 +81,8 @@ async function run(entries: Entry[], enabled: boolean): Promise<void> {
       const where = b.station ? ` · ${b.station}` : '';
       const penalty = plat === 'flex' ? ' Cancel more than 45 minutes before it starts to avoid a penalty.' : '';
       await at(s - 60 * 60000, `${name} block in 1 hour`, `${fmtTime(b.start)}${where}.${penalty}`);
-      await at(s, 'Block starting now', `${name} · ${fmtTime(b.start)}${where}. Check in and go get it.`);
-      await at(endOf(b).getTime(), 'Block finished?', 'Log your pay, tips and miles while it is fresh.');
+      await at(s, 'Play starting now', `${name} · ${fmtTime(b.start)}${where}. Check in and go get it.`);
+      await at(endOf(b).getTime(), 'Play finished?', 'Log your pay, tips and miles while it is fresh.');
     }
   } catch { /* reminders are best effort */ }
 }

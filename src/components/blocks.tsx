@@ -43,7 +43,7 @@ export function BlockRow({ e, now, nextId }: { e: Block; now: Date; nextId?: str
     const late = plat === 'flex' && new Date() > new Date(st.getTime() - 45 * 60000);
     const stamp = new Date().toLocaleString('en-US', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' });
     const cn: Block = { ...e, status: 'cancelled', note: ((e.note ? e.note + ' | ' : '') + 'Cancelled ' + stamp).slice(0, 300) };
-    if (await saveEntry(cn)) flash(late ? 'Cancelled. Heads up: this was inside the 45-min free-cancel window.' : 'Block cancelled');
+    if (await saveEntry(cn)) flash(late ? 'Cancelled. Heads up: this was inside the 45-min free-cancel window.' : 'Play cancelled');
   });
 
   const dl = new Date(s.getTime() - 45 * 60000);
@@ -87,7 +87,7 @@ export function BlockRow({ e, now, nextId }: { e: Block; now: Date; nextId?: str
               <Btn sm kind="gold" label={e.dash ? 'Edit dash & plays' : 'Add plays'} onPress={() => router.push({ pathname: '/dashedit', params: { id: e.id } })} />
             )}
             <Btn sm label="Edit" onPress={() => router.push({ pathname: '/block', params: { id: e.id } })} />
-            {pl && <Btn sm kind="danger" label={armed === 'cx' ? 'Tap again to cancel' : 'Cancel block'} onPress={cancel} />}
+            {pl && <Btn sm kind="danger" label={armed === 'cx' ? 'Tap again to cancel' : 'Cancel play'} onPress={cancel} />}
             <Btn sm kind="danger" label={armed === 'del' ? 'Tap again to delete' : 'Delete'} onPress={() => tap('del', async () => { if (await removeEntry(e.id)) flash('Deleted'); })} />
           </Actions>
         </View>
@@ -163,7 +163,7 @@ function LiveBody({ armed, tap, flash, setLive }: { armed: string | null; tap: (
   const r = dashStats(live.plays, liveDashMs(live, now), 0, now);
   const op = openPlay(live), pz = !!live.paused, st = new Date(live.start);
   const pause = () => {
-    if (op) { flash('Tap Play made first, then pause.'); return; }
+    if (op) { flash('Tap Play complete first, then pause.'); return; }
     const l = { ...live };
     if (l.paused) { l.pausedMs = (l.pausedMs || 0) + (Date.now() - l.paused); l.paused = 0; } else l.paused = Date.now();
     setLive(l);
@@ -199,8 +199,8 @@ function LiveBody({ armed, tap, flash, setLive }: { armed: string | null; tap: (
       })}
       <View style={{ marginTop: 10 }}>
         {op
-          ? <Btn kind="gold" block label="✔ Play made" style={{ minHeight: 56 }} onPress={() => router.push('/playmade')} />
-          : <Btn kind="gold" block label="▶ Play" style={{ minHeight: 56 }} onPress={() => router.push('/play')} />}
+          ? <Btn kind="gold" block label="✔ Play complete" style={{ minHeight: 56 }} onPress={() => router.push('/playmade')} />
+          : <Btn kind="gold" block label="▶ Make a play" style={{ minHeight: 56 }} onPress={() => router.push('/play')} />}
       </View>
       <Actions>
         <Btn sm label={pz ? 'Resume' : 'Pause'} onPress={pause} />
@@ -217,7 +217,7 @@ export function LiveStartCard() {
   if (live) return null;
   const start = (plat: 'doordash' | 'ubereats') => {
     setLive({ plat, start: Date.now(), paused: 0, pausedMs: 0, plays: [] });
-    flash('You are live. Hit Play when an order comes in.');
+    flash('You are live. Hit Make a play when an order comes in.');
   };
   return (
     <>
@@ -227,7 +227,7 @@ export function LiveStartCard() {
           <View style={{ flex: 1 }}><Btn kind="gold" block label="▶ DoorDash" onPress={() => start('doordash')} /></View>
           <View style={{ flex: 1 }}><Btn kind="gold" block label="▶ Uber Eats" onPress={() => start('ubereats')} /></View>
         </Row>
-        <Mut style={{ marginTop: 8 }}>Tap when you go online. The dash clock runs on its own. Hit Play when an order comes in and Play made when you drop it. End dash asks for tips and total miles.</Mut>
+        <Mut style={{ marginTop: 8 }}>Tap when you go online. The dash clock runs on its own. Hit Make a play when an order comes in and Play complete when you drop it. End dash asks for tips and total miles.</Mut>
       </Card>
     </>
   );
@@ -242,7 +242,7 @@ export function DropButton() {
   };
   return (
     <>
-      <Btn hero kind="gold" block label="⚡ Blocks just dropped" onPress={go} />
+      <Btn hero kind="gold" block label="⚡ Plays just hit it" onPress={go} />
       <Text style={{ color: C.mute, fontSize: 13, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>One tap logs the time. Add details after if you want.</Text>
     </>
   );

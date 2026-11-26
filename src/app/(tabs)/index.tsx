@@ -41,7 +41,7 @@ export default function Home() {
       <H2>This week</H2>
       <Card>
         <Text style={{ color: C.text, fontSize: 38, fontWeight: '800' }}>{money(wk.gross)}</Text>
-        <Mut>Today {money(day.gross)} · {wk.n} block{wk.n === 1 ? '' : 's'} this week{wk.orders > 0 ? ` · ${money(wk.perOrder)}/order` : ''}</Mut>
+        <Mut>Today {money(day.gross)} · {wk.n} play{wk.n === 1 ? '' : 's'} this week{wk.orders > 0 ? ` · ${money(wk.perOrder)}/order` : ''}</Mut>
         {wkP.length > 1 && <Mut>{wkP.map((x) => `${x.n} ${money(x.v)}`).join(' · ')}</Mut>}
         {goal > 0 && (
           <>
@@ -83,7 +83,7 @@ export default function Home() {
           </Row>
         </>
       ) : (
-        <Card><Text style={{ color: C.mute, textAlign: 'center', paddingVertical: 18 }}>Nothing scheduled.{'\n'}Tap + and choose Upcoming block I grabbed.</Text></Card>
+        <Card><Text style={{ color: C.mute, textAlign: 'center', paddingVertical: 18 }}>Nothing scheduled.{'\n'}Tap + and choose Upcoming play I grabbed.</Text></Card>
       )}
     </Screen>
   );

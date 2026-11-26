@@ -210,7 +210,7 @@ export function AuthScreen() {
             >
               DASHIN & FLEXIN
             </Text>
-            <Text style={{ color: C.mute, textAlign: 'center', marginTop: 4, marginBottom: 14, letterSpacing: 0.4 }}>Track the blocks. Keep the money.</Text>
+            <Text style={{ color: C.mute, textAlign: 'center', marginTop: 4, marginBottom: 14, letterSpacing: 0.4 }}>Track the plays. Keep the money.</Text>
 
             {mode === 'code' ? (
               <RecoveryPanel

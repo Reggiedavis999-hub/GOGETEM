@@ -85,8 +85,8 @@ export default function BlockForm() {
     let hrs = hv;
     const endS = parseTimeInput(end);
     if (hrs <= 0 && endS) { let d = tmin(endS) - tmin(startS); if (d <= 0) d += 1440; hrs = c2(d / 60); }
-    if (hrs <= 0) { flash('Add an end time, or the block length in hours like 3.5 or 3h30.'); return; }
-    if (hrs > 16) { flash(`${num(hrs, 0)} hours is too long. Blocks run 1 to 12 hours. Did a time or price land in the Hours box?`); return; }
+    if (hrs <= 0) { flash('Add an end time, or the play length in hours like 3.5 or 3h30.'); return; }
+    if (hrs > 16) { flash(`${num(hrs, 0)} hours is too long. Plays run 1 to 12 hours. Did a time or price land in the Hours box?`); return; }
     if (plat !== 'flex' && status === 'done' && Math.round(cleanNum(orders)) <= 0) { flash('Add the number of orders so pay per order works.'); return; }
     const sp = splitPay(parsePay(pay, hrs), cleanNum(tips), true);
     if (sp.bad) { flash('Your tips are more than your total. The total already includes the tips, so check the two numbers.'); return; }
@@ -94,10 +94,10 @@ export default function BlockForm() {
     let moved = false;
     const when = parseLocal(dateS, startS);
     if (st === 'done' && when > new Date()) { st = 'planned'; moved = true; }
-    if (hrs > 12 && !confirmOnce('h' + hrs, `${hrs} hours is long for one block.`)) return;
+    if (hrs > 12 && !confirmOnce('h' + hrs, `${hrs} hours is long for one play.`)) return;
     if (st !== 'cancelled') {
       const ov = overlapWith(entries, existing?.id, plat, when, hrs);
-      if (ov && !confirmOnce('o' + ov.id + startS + hrs, `You already have a ${PLAT_NAME[plat]} block that overlaps (${fmtDate(ov.date)} ${fmtTime(ov.start)}).`)) return;
+      if (ov && !confirmOnce('o' + ov.id + startS + hrs, `You already have a ${PLAT_NAME[plat]} play that overlaps (${fmtDate(ov.date)} ${fmtTime(ov.start)}).`)) return;
     }
     setLastPlat(plat);
     setBusy(true);
@@ -123,7 +123,7 @@ export default function BlockForm() {
     if (saved) {
       if (isLive) setLive(null);
       router.back();
-      flash(moved ? 'That start time is still ahead, so it is on your schedule as Upcoming.' : st === 'planned' ? 'Upcoming block saved' : st === 'cancelled' ? 'Block cancelled' : 'Block logged ' + money(e.pay + e.tips));
+      flash(moved ? 'That start time is still ahead, so it is on your schedule as Upcoming.' : st === 'planned' ? 'Upcoming play saved' : st === 'cancelled' ? 'Play cancelled' : 'Play logged ' + money(e.pay + e.tips));
     }
   };
 
@@ -136,7 +136,7 @@ export default function BlockForm() {
   const totalNum = pv.total;
 
   return (
-    <SheetScreen title={existing ? 'Edit block' : status === 'planned' ? 'Upcoming block' : 'Completed block'}>
+    <SheetScreen title={existing ? 'Edit play' : status === 'planned' ? 'Upcoming play' : 'Completed play'}>
       {!!existing?.dash && (
         <>
           <Note>This dash has plays. Change the play details, times, rates and totals in the dash editor. If you change the hours, pay, tips, miles or orders here by hand, the play detail is dropped.</Note>

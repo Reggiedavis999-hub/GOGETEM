@@ -32,7 +32,7 @@ export default function PlayForm() {
       flash(`Play ${n} updated`);
       return;
     }
-    if (openPlay(live)) { flash('You already have a play running. Tap Play made first.'); return; }
+    if (openPlay(live)) { flash('You already have a play running. Tap Play complete first.'); return; }
     const now = Date.now();
     const resumed = live.paused ? { paused: 0, pausedMs: (live.pausedMs || 0) + (now - live.paused) } : {};
     setLive({ ...live, ...resumed, rate: r > 0 ? r : live.rate, plays: [...live.plays, { id: newId(), start: now, rate: r, deliveries: d, total: 0 }] });
@@ -58,7 +58,7 @@ export default function PlayForm() {
           : `Base rate is the hourly rate DoorDash shows for this order right now${live.rate ? ` (last one was ${money(live.rate)}/hr)` : ''}. Peak pay or a promo changed it? Type the new rate. It only counts for this play. Deliveries: 1 for a single, 2 or more for a stack. The play's clock starts when you tap Start play.`}
       </Note>
       <Actions>
-        <Btn kind="gold" label={ed ? 'Save play' : '▶ Start play'} onPress={save} />
+        <Btn kind="gold" label={ed ? 'Save play' : '▶ Make the play'} onPress={save} />
         <Btn label="Cancel" onPress={() => router.back()} />
         {ed && <Btn kind="danger" label={armed === 'rm' ? 'Tap again to remove' : 'Remove play'} onPress={remove} />}
       </Actions>

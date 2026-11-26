@@ -53,7 +53,7 @@ export default function DashEdit() {
   const save = async () => {
     if (busy) return;
     if (!built.ok) { flash(built.error); return; }
-    if (!built.dash.plays.length) { flash('Add at least one play, or tap Back to a single block.'); return; }
+    if (!built.dash.plays.length) { flash('Add at least one play, or tap Back to a single play.'); return; }
     setBusy(true);
     const e: Block = { ...b, ...built.fields, platform: normPlat(b.platform), status: 'done', note: note.trim().slice(0, 300), dash: built.dash };
     const saved = await saveEntry(e);
@@ -69,7 +69,7 @@ export default function DashEdit() {
   };
   const plain = async () => {
     const { dash: _drop, ...rest } = b;
-    if (await saveEntry(rest as Block)) { router.back(); flash('Back to a single block. The play detail was removed.'); }
+    if (await saveEntry(rest as Block)) { router.back(); flash('Back to a single play. The play detail was removed.'); }
   };
 
   return (
@@ -137,7 +137,7 @@ export default function DashEdit() {
       <Actions>
         <Btn kind="gold" label={busy ? 'Saving...' : 'Save dash'} onPress={save} disabled={busy} />
         <Btn label="Cancel" onPress={() => router.back()} />
-        {!!b.dash && <Btn kind="danger" label={armed === 'plain' ? 'Tap again to confirm' : 'Back to a single block'} onPress={() => tap('plain', plain)} />}
+        {!!b.dash && <Btn kind="danger" label={armed === 'plain' ? 'Tap again to confirm' : 'Back to a single play'} onPress={() => tap('plain', plain)} />}
       </Actions>
     </SheetScreen>
   );

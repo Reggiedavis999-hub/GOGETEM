@@ -78,7 +78,7 @@ export default function Drops() {
 
       <H2>Recent drops</H2>
       <Card>
-        {!list.length && <Empty>Nothing yet. Hit the gold button the moment you see blocks appear.</Empty>}
+        {!list.length && <Empty>Nothing yet. Hit the gold button the moment you see plays appear.</Empty>}
         {list.slice(0, 15).map((d) => (
           <View key={d.id} style={{ paddingVertical: 12, borderTopWidth: 1, borderTopColor: C.line }}>
             <Row>

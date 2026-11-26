@@ -70,7 +70,7 @@ function Summary({ year, setYear }: { year: number; setYear: (y: number) => void
       <Seg<string> value={P} onChange={setP} options={[{ k: 'all', label: 'All' }, { k: 'flex', label: 'Flex' }, { k: 'doordash', label: 'DoorDash' }, { k: 'ubereats', label: 'Uber Eats' }]} />
       <Card>
         <Text style={{ color: C.text, fontSize: 38, fontWeight: '800' }}>{money(t.gross)}</Text>
-        <Mut>Gross{P === 'all' ? ' from all platforms' : ' from ' + PLAT_NAME[P as 'flex']} · {t.n} block{t.n === 1 ? '' : 's'} · {num(t.hours)} hrs · {money(t.perHr)}/hr with tips</Mut>
+        <Mut>Gross{P === 'all' ? ' from all platforms' : ' from ' + PLAT_NAME[P as 'flex']} · {t.n} play{t.n === 1 ? '' : 's'} · {num(t.hours)} hrs · {money(t.perHr)}/hr with tips</Mut>
         <View style={{ marginTop: 12 }}>
           <TableRow cells={['Base pay (without tips)', money(t.pay)]} />
           <TableRow cells={['Tips (already in the total)', money(t.tips)]} />
@@ -104,7 +104,7 @@ function Summary({ year, setYear }: { year: number; setYear: (y: number) => void
       )}
       <H2>By month</H2>
       <Card>
-        {rows.length ? (<><TableRow head cells={['Month', 'Gross', 'Hours', 'Miles']} />{rows}</>) : <Empty>No completed blocks logged for {year}.</Empty>}
+        {rows.length ? (<><TableRow head cells={['Month', 'Gross', 'Hours', 'Miles']} />{rows}</>) : <Empty>No completed plays logged for {year}.</Empty>}
       </Card>
     </>
   );
@@ -125,7 +125,7 @@ function History() {
   });
   return (
     <>
-      <Seg<'all' | 'blocks' | 'expenses'> value={f} onChange={setF} options={[{ k: 'all', label: 'All' }, { k: 'blocks', label: 'Blocks' }, { k: 'expenses', label: 'Expenses' }]} />
+      <Seg<'all' | 'blocks' | 'expenses'> value={f} onChange={setF} options={[{ k: 'all', label: 'All' }, { k: 'blocks', label: 'Plays' }, { k: 'expenses', label: 'Expenses' }]} />
       <Card>
         {!list.length && <Empty>Nothing here yet.</Empty>}
         {list.slice(0, 80).map((e) => (
@@ -245,7 +245,7 @@ function Export({ year, setYear }: { year: number; setYear: (y: number) => void 
   return (
     <Card>
       <Text style={{ color: C.text, fontSize: 18, fontWeight: '800' }}>{year} export</Text>
-      <Mut style={{ marginTop: 6 }}>Shares every completed block and expense for the year as CSV. Send it to Sheets, Excel, email or your tax preparer.</Mut>
+      <Mut style={{ marginTop: 6 }}>Shares every completed play and expense for the year as CSV. Send it to Sheets, Excel, email or your tax preparer.</Mut>
       <Actions>
         <Btn kind="gold" label="Share CSV" onPress={share} />
         <Btn label="Prev year" onPress={() => setYear(year - 1)} />
